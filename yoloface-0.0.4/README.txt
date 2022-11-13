@@ -1,0 +1,3 @@
+For this project, I am going to use YOLOv3, one of the most frequently used versions of the YOLO family, which comprises the state-of-the-art object detection system for the real-time scenario and it is amazingly accurate and fast.you can find the weights file created by training with YOLOv3 and our results on the custom dataset. Also it has been added configuration files for use of weights file properly. You want to test our face detection system you can use the following sample code.
+
+  

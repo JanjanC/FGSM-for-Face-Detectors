@@ -1,0 +1,127 @@
+
+
+# YOLO FACE
+```bash
+You only look once (YOLO) is a state-of-the-art, real-time object detection system. It is based on Deep Learning.
+Face detection is one of the important tasks of object detection. We apply a single neural network to the full image.
+This project focuses on improving the accuracy of detecting the face using the model of deep learning network (YOLO).
+This network divides the image into regions and predicts bounding boxes and probabilities for each region.
+These bounding boxes are weighted by the predicted probabilities.
+
+For this project, I am going to use YOLOv3, one of the most frequently used versions of the YOLO family, which comprises the 
+state-of-the-art object detection system for the real-time scenario and it is amazingly accurate and fast.
+you can give  the weights file created by training with YOLOv3 and our results on the custom dataset.
+Also it has been added configuration files for use of weights file properly. 
+You want to test our face detection system you can use the following sample code sample.
+
+```
+
+## User Installation :
+If you already have a working installation of numpy and pandas, opencv the easiest way to install yoloface is using pip
+```bash
+pip install yoloface
+```
+
+
+
+## This Package Depend On Other Packages:
+```bash
+# Prerequisites
+  1.numpy
+  2.cv2
+  3.os 
+  4.PIL
+  5.gdown
+  6.time
+  7.IPython
+```
+
+# Usage
+
+## Face Detection In Image
+```python
+# import libraries
+from yoloface import face_analysis
+import numpy
+import cv2
+face=face_analysis()        #  Auto Download a large weight files from Google Drive.
+                            #  only first time.
+                            #  Automatically  create folder .yoloface on cwd.
+# example 1
+%%time
+img,box,conf=face.face_detection(image_path='path/to/jpg/or/png/filename.jpg',model='tiny')
+print(box)                  # box[i]=[x,y,w,h]
+print(conf)                 #  value between(0 - 1)  or probability
+face.show_output(img,box)
+```
+
+```python
+# example 2
+%%time
+img,box,conf=face.face_detection(image_path='path/to/jpg/or/png/filename.jpg',model='full')
+print(box)
+print(conf)
+face.show_output(img,box)
+
+```
+
+## Real-Time Detection on a Webcam
+
+```python
+from yoloface import face_analysis
+import numpy
+import cv2
+
+# example 3
+cap = cv2.VideoCapture(0)
+while True: 
+    _, frame = cap.read()
+    _,box,conf=face.face_detection(frame_arr=frame,frame_status=True,model='tiny')
+    output_frame=face.show_output(frame,box,frame_status=True)
+    cv2.imshow('frame',output_frame)
+    key=cv2.waitKey(1)
+    if key ==ord('v'): 
+        break 
+cap.release()
+cv2.destroyAllWindows()
+#press v (exits)
+```
+
+
+
+```python
+# example 4
+cap = cv2.VideoCapture(r'video file path.mp4')
+while True: 
+    _, frame = cap.read()
+    __,box,conf=face.face_detection(frame_arr=frame,frame_status=True,model='full')
+    output_frame=face.show_output(img=frame,face_box=box,frame_status=True)
+    print(box)
+    cv2.imshow('frame',output_frame)
+    key=cv2.waitKey(0)
+    if key ==ord('v'): 
+        break 
+cap.release()
+cv2.destroyAllWindows()
+#press v (exits)
+```
+
+## Sample images
+## Output Image 1
+![input](result1.png)
+
+## Output Image 2
+![input2](https://github.com/vishalbpatil1/yoloface/blob/main/ff4.png)
+
+## Output Image 3
+![input3](result2.png)
+
+The YOLOv3 (You Only Look Once) is a state-of-the-art, real-time object detection algorithm. The published model recognizes 80 different objects in images and videos. For more details, you can refer to this paper.
+[Reference link ](https://pjreddie.com/darknet/yolo/)
+
+
+[Github file source fist](https://github.com/vishalbpatil1/Supper-face-detection-or-crowd-detection)
+```bash
+
+```
+[Github file source second](https://github.com/vishalbpatil1/yoloface)

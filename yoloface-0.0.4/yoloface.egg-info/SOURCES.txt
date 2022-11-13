@@ -1,0 +1,12 @@
+CHANGELOG.txt
+LICENCE.txt
+MANIFEST.in
+README.md
+README.txt
+setup.py
+yoloface/__init__.py
+yoloface.egg-info/PKG-INFO
+yoloface.egg-info/SOURCES.txt
+yoloface.egg-info/dependency_links.txt
+yoloface.egg-info/requires.txt
+yoloface.egg-info/top_level.txt
