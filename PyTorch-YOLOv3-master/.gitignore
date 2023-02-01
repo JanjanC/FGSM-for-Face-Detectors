@@ -1,18 +1,17 @@
-
 .DS_Store
 build
 .git
 *.egg-info
-dist
-output/
-data/*
-backup
-weights/*.weights
-weights/*.conv.*
+# dist
+# output/
+# data/*
+# backup
+# weights/*.weights
+# weights/*.conv.*
 __pycache__
-checkpoints/
+# checkpoints/
 
-.vscode/
-logs/
+# .vscode/
+# logs/
 
 .python-version
