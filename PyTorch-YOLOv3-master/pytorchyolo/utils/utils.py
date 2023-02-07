@@ -321,35 +321,54 @@ def non_max_suppression(prediction, conf_thres=0.25, iou_thres=0.45, classes=Non
 
     t = time.time()
     output = [torch.zeros((0, 6), device="cpu")] * prediction.shape[0]
-    output_index = [0] * prediction.shape[0]
+    prediction_output = [0] * prediction.shape[0]
     
     for xi, x in enumerate(prediction):  # image index, image inference
         # Apply constraints
         # x[((x[..., 2:4] < min_wh) | (x[..., 2:4] > max_wh)).any(1), 4] = 0  # width-height
         #remove boxes with low object confidence
-        x = x[x[..., 4] > conf_thres]  # confidence
-
+        x = x[x[..., 4] > conf_thres]  # confidence #shape before removing low confidence is 10647 x 5 + num_class
+        prediction_x = x[x[..., 4] > conf_thres]
+#         print(prediction_x)
+        
+#         print(x.shape)
+        
         # If none remain process next image
-        if not x.shape[0]:
+        if not x.shape[0]: #proposed bbox is less than the confidence threshold, thus they are all removed
             continue
 
         # Compute conf
         x[:, 5:] *= x[:, 4:5]  # conf = cls_conf * obj_conf
 
         # Box (center x, center y, width, height) to (x1, y1, x2, y2)
-        box = xywh2xyxy(x[:, :4])
+        box = xywh2xyxy(x[:, :4]) # nx4 matrix
+#         print('Box')
+#         print(box)
+#         print(box.shape)
         
-        print('Debug')
-        print(multi_label)
+#         print('Debug')
+#         print(multi_label)
         # Detections matrix nx6 (xyxy, conf, cls)
         if multi_label:
-            i, j = (x[:, 5:] > conf_thres).nonzero(as_tuple=False).T #i - first index of classes > thres, j...
+            i, j = (x[:, 5:] > conf_thres).nonzero(as_tuple=False).T #check the conf of classes first #i - first index, j - second index of class > conf_thres
+#             print('ij')
+#             print(i)
+#             print(j)
+#             print(box[i])
+#             print(j[:, None])
+#             print(x[i, j + 5, None])
+            # box[i] selects the boxes
+            # x[i, j + 5, None] selects the class confidence
+            # j[:, None] selects the index (0 indexed)
             x = torch.cat((box[i], x[i, j + 5, None], j[:, None].float()), 1)
+#             print('new x')
+#             print(x)
+#             print(prediction_x)
         else:  # best class only
             conf, j = x[:, 5:].max(1, keepdim=True)
             x = torch.cat((box, conf, j.float()), 1)[conf.view(-1) > conf_thres]
         
-        print(classes)
+#         print(classes)
         # Filter by class
         if classes is not None:
             x = x[(x[:, 5:6] == torch.tensor(classes, device=x.device)).any(1)]
@@ -360,6 +379,7 @@ def non_max_suppression(prediction, conf_thres=0.25, iou_thres=0.45, classes=Non
             continue
         elif n > max_nms:  # excess boxes
             # sort by confidence
+            # x[:, 4].argsort
             x = x[x[:, 4].argsort(descending=True)[:max_nms]]
 
         # Batched NMS
@@ -371,14 +391,13 @@ def non_max_suppression(prediction, conf_thres=0.25, iou_thres=0.45, classes=Non
             i = i[:max_det]
 
         output[xi] = to_cpu(x[i])
-        output_index[xi] = i
+        prediction_output[xi] = prediction_x[i]
 
         if (time.time() - t) > time_limit:
             print(f'WARNING: NMS time limit {time_limit}s exceeded')
             break  # time limit exceeded
 
-    return output, output_index
-
+    return output, prediction_output
 
 def print_environment_info():
     """
