@@ -321,10 +321,12 @@ def non_max_suppression(prediction, conf_thres=0.25, iou_thres=0.45, classes=Non
 
     t = time.time()
     output = [torch.zeros((0, 6), device="cpu")] * prediction.shape[0]
-
+    output_index = [0] * prediction.shape[0]
+    
     for xi, x in enumerate(prediction):  # image index, image inference
         # Apply constraints
         # x[((x[..., 2:4] < min_wh) | (x[..., 2:4] > max_wh)).any(1), 4] = 0  # width-height
+        #remove boxes with low object confidence
         x = x[x[..., 4] > conf_thres]  # confidence
 
         # If none remain process next image
@@ -332,19 +334,22 @@ def non_max_suppression(prediction, conf_thres=0.25, iou_thres=0.45, classes=Non
             continue
 
         # Compute conf
-        x[:, 5:] *= x[:, 4:5]  # conf = obj_conf * cls_conf
+        x[:, 5:] *= x[:, 4:5]  # conf = cls_conf * obj_conf
 
         # Box (center x, center y, width, height) to (x1, y1, x2, y2)
         box = xywh2xyxy(x[:, :4])
-
+        
+        print('Debug')
+        print(multi_label)
         # Detections matrix nx6 (xyxy, conf, cls)
         if multi_label:
-            i, j = (x[:, 5:] > conf_thres).nonzero(as_tuple=False).T
+            i, j = (x[:, 5:] > conf_thres).nonzero(as_tuple=False).T #i - first index of classes > thres, j...
             x = torch.cat((box[i], x[i, j + 5, None], j[:, None].float()), 1)
         else:  # best class only
             conf, j = x[:, 5:].max(1, keepdim=True)
             x = torch.cat((box, conf, j.float()), 1)[conf.view(-1) > conf_thres]
-
+        
+        print(classes)
         # Filter by class
         if classes is not None:
             x = x[(x[:, 5:6] == torch.tensor(classes, device=x.device)).any(1)]
@@ -366,12 +371,13 @@ def non_max_suppression(prediction, conf_thres=0.25, iou_thres=0.45, classes=Non
             i = i[:max_det]
 
         output[xi] = to_cpu(x[i])
+        output_index[xi] = i
 
         if (time.time() - t) > time_limit:
             print(f'WARNING: NMS time limit {time_limit}s exceeded')
             break  # time limit exceeded
 
-    return output
+    return output, output_index
 
 
 def print_environment_info():
