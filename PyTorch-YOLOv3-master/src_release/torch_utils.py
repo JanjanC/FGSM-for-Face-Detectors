@@ -22,7 +22,8 @@ logger.addHandler(ch)
 Loading of model and optmizers and others train related items
 '''
 def torch_load_weights(model, optimizer, weight_file, model_only=True):
-    weights = torch.load(weight_file)
+    # Changed to CPU until GPU has been set default for most
+    weights = torch.load(weight_file, map_location=torch.device('cpu'))
     model.load_state_dict(weights['state_dict'], strict=True)
     iteration = None
     if 'iteration' in weights:
