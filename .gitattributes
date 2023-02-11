@@ -1,3 +1,0 @@
-# Weights and H5
-*.h5 filter=lfs diff=lfs merge=lfs -text
-*.weights filter=lfs diff=lfs merge=lfs -text
