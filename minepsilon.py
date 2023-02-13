@@ -57,7 +57,10 @@ def get_iou(ground_truth, pred):
 
 def closest_bbox(bboxes, target_bbox):
     ious = [get_iou(bbox, target_bbox) for bbox in bboxes]
-    return bboxes[ious.index(max(ious))], max(ious)
+    if ious:
+        return bboxes[ious.index(max(ious))], max(ious)
+    else:
+        return [], 0
 
 # FGSM attack code
 def fgsm_attack(image, epsilon, data_grad, x1, y1, x2, y2):
@@ -75,7 +78,7 @@ def fgsm_attack(image, epsilon, data_grad, x1, y1, x2, y2):
 def min_model_eps(image, data_grad, det_fn, bbox, start = 0., end = 3, step = 0.05):
     # Set epsilon to the start value
     eps = start
-    print("before perturbation | closest bbox:", closest_bbox(det_fn(image), bbox), "eps:", eps)
+    print("\tbefore perturbation | closest bbox:", closest_bbox(det_fn(image), bbox), "eps:", eps)
     bbox, iou = closest_bbox(det_fn(image), bbox)
     if iou <= 0.5:
         return 0
@@ -91,7 +94,7 @@ def min_model_eps(image, data_grad, det_fn, bbox, start = 0., end = 3, step = 0.
     
     save_img = np.moveaxis((perturbed_img.detach().numpy() * 255).squeeze(), 0, -1).astype('uint8')
     cv2.imwrite('_2cantdetect.jpg', cv2.cvtColor(save_img, cv2.COLOR_RGB2BGR))
-    print("e undetectable | closest bbox:", closest_bbox(det_fn(perturbed_img), bbox), "eps:", eps)
+    print("\te undetectable | closest bbox:", closest_bbox(det_fn(perturbed_img), bbox), "eps:", eps)
     
     # Decrease the epsilon value by 0.01 until it can be detected by the detection function or until the start
     while not closest_bbox(det_fn(perturbed_img), bbox)[1] > 0.5 and eps > start:
@@ -100,7 +103,7 @@ def min_model_eps(image, data_grad, det_fn, bbox, start = 0., end = 3, step = 0.
     
     save_img = np.moveaxis((perturbed_img.detach().numpy() * 255).squeeze(), 0, -1).astype('uint8')
     cv2.imwrite('_3maxcandetect.jpg', cv2.cvtColor(save_img, cv2.COLOR_RGB2BGR))
-    print("max e detectable | closest bbox:", closest_bbox(det_fn(perturbed_img), bbox), "eps:", eps)
+    print("\tmax e detectable | closest bbox:", closest_bbox(det_fn(perturbed_img), bbox), "eps:", eps)
     
     # Add an additional 0.01 so that the returned value is the last epsilon value that the model was unable to detect
     return eps + 0.01
@@ -112,6 +115,8 @@ def mp_det_fn(image, return_boxes = True):
         if not return_boxes:
             return results.detections is not None
         else:
+            if results.detections is None:
+                return []
             bboxes = []
             for detection in results.detections:
                 bbox = detection.location_data.relative_bounding_box
@@ -131,6 +136,8 @@ def yn_det_fn(image, return_boxes = True):
     if not return_boxes:
         return faces is not None
     else:
+        if faces is None:
+            return []
         bboxes = []
         for face in faces:
             bboxes += [tuple((
