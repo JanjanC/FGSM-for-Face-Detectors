@@ -224,10 +224,12 @@ def viz_notebook(model,eval_dataloader,device,ibv_stop=-1):
                 plt.title(f'Image {img[b].shape[2]}')
                 plt.imshow(np.transpose(unorm(img[b]), (1,2,0)))
                 plt.axis('off')
+                
                 plt.subplot(1,3,2)
                 plt.title(f'Prediction {pred_tmp.shape[0]}')
                 plt.imshow(pred_tmp)
                 plt.axis('off')
+                
                 plt.subplot(1,3,3)
                 plt.title(f'Ground-Truth {mask_gt_tmp.shape[0]}')
                 plt.imshow(mask_gt_tmp)
