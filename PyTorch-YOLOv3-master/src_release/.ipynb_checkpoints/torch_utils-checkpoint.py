@@ -215,9 +215,9 @@ def viz_notebook(model,eval_dataloader,device,ibv_stop=-1):
             mask_gt = mask_gt.cpu().data
             for b in range(pred_mask.shape[0]):
                 pred_tmp = tf_viz_img(pred_mask,b,pred=True)
-                mask_gt_tmp = tf_viz_img(mask_gt,b,pred=False)
+                # mask_gt_tmp = tf_viz_img(mask_gt,b,pred=False)
                 pred_tmp = np.transpose(pred_tmp, (1,2,0))
-                mask_gt_tmp = np.transpose(mask_gt_tmp, (1,2,0))
+                # mask_gt_tmp = np.transpose(mask_gt_tmp, (1,2,0))
                 ##plotting
                 fig = plt.figure()
                 plt.subplot(1,3,1)
@@ -230,10 +230,13 @@ def viz_notebook(model,eval_dataloader,device,ibv_stop=-1):
                 plt.imshow(pred_tmp)
                 plt.axis('off')
                 
-                plt.subplot(1,3,3)
-                plt.title(f'Ground-Truth {mask_gt_tmp.shape[0]}')
-                plt.imshow(mask_gt_tmp)
-                plt.axis('off')                
+                print(pred_tmp)
+                
+                # plt.subplot(1,3,3)
+                # plt.title(f'Ground-Truth {mask_gt_tmp.shape[0]}')
+                # plt.imshow(mask_gt_tmp)
+                # plt.axis('off')                
+                
                 plt.show()
                 plt.close(fig)
             if ibv_stop == ibv:
