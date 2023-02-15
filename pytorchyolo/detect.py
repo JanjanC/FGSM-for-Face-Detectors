@@ -24,13 +24,10 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 from matplotlib.ticker import NullLocator
 
-import torch.nn.functional as F
-import torch.nn as nn
 
 def detect_directory(model_path, weights_path, img_path, classes, output_path,
                      batch_size=8, img_size=416, n_cpu=8, conf_thres=0.5, nms_thres=0.5):
     """Detects objects on all images in specified directory and saves output images with drawn detections.
-
     :param model_path: Path to model definition file (.cfg)
     :type model_path: str
     :param weights_path: Path to weights or checkpoint file (.weights or .pth)
@@ -66,19 +63,8 @@ def detect_directory(model_path, weights_path, img_path, classes, output_path,
     print(f"---- Detections were saved to: '{output_path}' ----")
 
 
-def fgsm_attack(image, epsilon, data_grad):
-    # Collect the element-wise sign of the data gradient
-    sign_data_grad = data_grad.sign()
-    # Create the perturbed image by adjusting each pixel of the input image
-    perturbed_image = image + epsilon*sign_data_grad
-    # Adding clipping to maintain [0,1] range
-    perturbed_image = torch.clamp(perturbed_image, 0, 1)
-    # Return the perturbed image
-    return perturbed_image
-    
-def detect_image(model, device, image, img_size=416, conf_thres=0.5, nms_thres=0.5):
+def detect_image(model, image, img_size=416, conf_thres=0.5, nms_thres=0.5):
     """Inferences one image with model.
-
     :param model: Model for inference
     :type model: models.Darknet
     :param image: Image to inference
@@ -100,42 +86,19 @@ def detect_image(model, device, image, img_size=416, conf_thres=0.5, nms_thres=0
         Resize(img_size)])(
             (image, np.zeros((1, 5))))[0].unsqueeze(0)
 
-    
-    target = torch.tensor([1.0])
-    
-    input_img = input_img.to(device)
-    input_img.requires_grad = True
-    
+    if torch.cuda.is_available():
+        input_img = input_img.to("cuda")
+
     # Get detections
-#     with torch.no_grad():
-    detections = model(input_img)
-    
-#     return detections
-    detections = non_max_suppression(detections, conf_thres, nms_thres)
-    
-    detections = rescale_boxes(detections[0], img_size, image.shape[:2])
-    
-    print(detections)
-#     hard coded for 1 face
-    loss = nn.BCELoss()(detections[0][5],   torch.tensor(1.0, requires_grad=True))
-    
-    model.zero_grad()
-
-#     # Calculate gradients of model in backward pass
-    loss.backward()
-    
-    input_grad = input_img.grad.data
-
-    # Call FGSM Attack
-    perturbed_data = fgsm_attack(input_img, epsilon, input_grad)
-    
-    return perturbed_data
-
+    with torch.no_grad():
+        detections = model(input_img)
+        detections = non_max_suppression(detections, conf_thres, nms_thres)
+        detections = rescale_boxes(detections[0], img_size, image.shape[:2])
+    return detections.numpy()
 
 
 def detect(model, dataloader, output_path, conf_thres, nms_thres):
     """Inferences images with model.
-
     :param model: Model for inference
     :type model: models.Darknet
     :param dataloader: Dataloader provides the batches of images to inference
@@ -168,7 +131,6 @@ def detect(model, dataloader, output_path, conf_thres, nms_thres):
         # Get detections
         with torch.no_grad():
             detections = model(input_imgs)
-            print(detections)
             detections = non_max_suppression(detections, conf_thres, nms_thres)
 
         # Store image and detections
@@ -179,7 +141,6 @@ def detect(model, dataloader, output_path, conf_thres, nms_thres):
 
 def _draw_and_save_output_images(img_detections, imgs, img_size, output_path, classes):
     """Draws detections in output images and stores them.
-
     :param img_detections: List of detections
     :type img_detections: [Tensor]
     :param imgs: List of paths to image files
@@ -201,7 +162,6 @@ def _draw_and_save_output_images(img_detections, imgs, img_size, output_path, cl
 
 def _draw_and_save_output_image(image_path, detections, img_size, output_path, classes):
     """Draws detections in output image and stores this.
-
     :param image_path: Path to input image
     :type image_path: str
     :param detections: List of detections on image
@@ -259,7 +219,6 @@ def _draw_and_save_output_image(image_path, detections, img_size, output_path, c
 
 def _create_data_loader(img_path, batch_size, img_size, n_cpu):
     """Creates a DataLoader for inferencing.
-
     :param img_path: Path to file containing all paths to validation images.
     :type img_path: str
     :param batch_size: Size of each image batch
