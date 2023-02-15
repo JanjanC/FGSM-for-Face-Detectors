@@ -155,11 +155,12 @@ def yn_det_fn(image, return_boxes = True):
         return bboxes
 
 def yf_det_fn(image, return_boxes = True):
-    bboxes = detect.detect_image(yn_face_detector, image)
+    image = np.moveaxis((image.detach().numpy() * 255).squeeze(), 0, -1).astype('uint8')
+    bboxes = detect.detect_image(yf_face_detector, image)
     if not return_boxes:
         return bboxes is not None
     else:
-        return bboxes
+        return [tuple(map(int, bbox[:4])) for bbox in bboxes]
     
 # mediapipe stuff
 mp_face_detection = mp.solutions.face_detection
