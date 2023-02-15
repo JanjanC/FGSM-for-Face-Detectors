@@ -4,6 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import torch
 import mediapipe as mp
+from pytorchyolo import detect, models
 import os
 import gdown 
 
@@ -56,7 +57,12 @@ def get_iou(ground_truth, pred):
     return iou
 
 def closest_bbox(bboxes, target_bbox):
-    ious = [get_iou(bbox, target_bbox) for bbox in bboxes]
+    ious = []
+    for bbox in bboxes:
+        iou = get_iou(bbox, target_bbox)
+        if iou == 1:
+            return bbox, 1
+        ious += [iou]
     if ious:
         return bboxes[ious.index(max(ious))], max(ious)
     else:
@@ -147,6 +153,13 @@ def yn_det_fn(image, return_boxes = True):
                 int(np.ceil(face[1] + face[3]))
             ))]
         return bboxes
+
+def yf_det_fn(image, return_boxes = True):
+    bboxes = detect.detect_image(yn_face_detector, image)
+    if not return_boxes:
+        return bboxes is not None
+    else:
+        return bboxes
     
 # mediapipe stuff
 mp_face_detection = mp.solutions.face_detection
@@ -155,3 +168,5 @@ mp_drawing = mp.solutions.drawing_utils
 # yunet stuff
 yunet_onnx()
 yn_face_detector = cv2.FaceDetectorYN_create("onnx/face_detection_yunet_2022mar.onnx", "", (0, 0))
+
+_, yf_face_detector = models.load_model('./weights/yolo_face_sthanhng.cfg', "./weights/yolo_face_sthanhng.weights")
