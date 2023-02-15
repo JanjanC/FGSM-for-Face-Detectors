@@ -1,5 +1,5 @@
 *.weights
 *.cfg
+*.pyc
 face_detection_yunet_2022mar.onnx
 /.ipynb_checkpoints
-/__pycache__
