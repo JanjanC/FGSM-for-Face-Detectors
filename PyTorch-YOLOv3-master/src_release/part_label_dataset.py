@@ -66,13 +66,15 @@ class PartLabelDataset(data.Dataset):
                 occl_img = np.array(pilimg)
             mask_img = np.array(Image.open(self.files[index]['mask']))
             sp_img = np.array(Image.open(self.files[index]['sp_cc']))            
+            fn = self.files[index]['filename']
+            
             mask_img = mask_img.astype(np.uint8)
             if self.augment:
                 occl_img, mask_img = aug2D.augment(occl_img,mask_img,
                                                    aug_type='flip',
                                                    patch_size=occl_img.shape[0]
                 )
-            return self.transforms(occl_img), mask_img, sp_img
+            return self.transforms(occl_img), mask_img, sp_img, fn
             
         except Exception as e:
             logger.error('Error(%s) in dataloader. Continuing to the next index..', e)
