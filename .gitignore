@@ -5,3 +5,6 @@ face_detection_yunet_2022mar.onnx
 /.ipynb_checkpoints
 images/
 pytorchyolo/
+*.png
+*.jpg
+*.csv
