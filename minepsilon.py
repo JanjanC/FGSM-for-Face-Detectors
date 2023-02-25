@@ -8,6 +8,8 @@ from pytorchyolo import detect, models
 import os
 import gdown 
 
+insane = ""
+
 def yunet_onnx():
     model_file=[
         'face_detection_yunet_2022mar.onnx'
@@ -69,46 +71,49 @@ def closest_bbox(bboxes, target_bbox):
         return [], 0
 
 # FGSM attack code
-def fgsm_attack(image, epsilon, data_grad, x1, y1, x2, y2):
+def fgsm_attack(image, epsilon, data_grad, mask, x1, y1, x2, y2):
     # Collect the element-wise sign of the data gradient
     image = image.clone().detach()
     sign_data_grad = data_grad.sign()
     # Create the perturbed image by adjusting each pixel of the input image
     perturbed_image = image
-    perturbed_image[:, :, y1:y2, x1:x2] = perturbed_image[:, :, y1:y2, x1:x2] + epsilon * sign_data_grad[:, :, y1:y2, x1:x2] # apply it only to the face region
+    perturbed_image[:, :, y1:y2, x1:x2] = perturbed_image[:, :, y1:y2, x1:x2] + epsilon * sign_data_grad[:, :, y1:y2, x1:x2] * mask 
+    # apply it only to the face region
     # Adding clipping to maintain [0,1] range
     perturbed_image = torch.clamp(perturbed_image, 0, 1)
     # Return the perturbed image
     return perturbed_image
     
-def min_model_eps(image, data_grad, det_fn, bbox, start = 0., end = 3, step = 0.05):
+def min_model_eps(image, data_grad, det_fn, mask, bbox, start = 0., end = 3, step = 0.05):
     # Set epsilon to the start value
     eps = start
     print("\tbefore perturbation | closest bbox:", closest_bbox(det_fn(image), bbox), "eps:", eps)
-    bbox, iou = closest_bbox(det_fn(image), bbox)
+    _, iou = closest_bbox(det_fn(image), bbox)
     if iou <= 0.5:
         return 0
     perturbed_img = image.clone().detach()
     
-    save_img = np.moveaxis((perturbed_img.numpy() * 255).squeeze(), 0, -1).astype('uint8')
-    cv2.imwrite('_1unperturbed.jpg', cv2.cvtColor(save_img, cv2.COLOR_RGB2BGR))
+    save_img = cv2.cvtColor(np.moveaxis((perturbed_img.detach().numpy() * 255).squeeze(), 0, -1).astype('uint8'), cv2.COLOR_RGB2BGR)
+    cv2.imwrite('_1unperturbed.png', save_img)
     
     # Increase the epsilon value by 0.05 until it cannot be detected by the detection function or until the end
     while closest_bbox(det_fn(perturbed_img), bbox)[1] > 0.5 and eps < end:
         eps += 0.05
-        perturbed_img = fgsm_attack(image, eps, data_grad, *bbox)
+        perturbed_img = fgsm_attack(image, eps, data_grad, mask, *bbox)
     
-    save_img = np.moveaxis((perturbed_img.detach().numpy() * 255).squeeze(), 0, -1).astype('uint8')
-    cv2.imwrite('_2cantdetect.jpg', cv2.cvtColor(save_img, cv2.COLOR_RGB2BGR))
+    save_img = cv2.cvtColor(np.moveaxis((perturbed_img.detach().numpy() * 255).squeeze(), 0, -1).astype('uint8'), cv2.COLOR_RGB2BGR)
+    cv2.imwrite('_2cantdetect.png', save_img)
     print("\te undetectable | closest bbox:", closest_bbox(det_fn(perturbed_img), bbox), "eps:", eps)
     
     # Decrease the epsilon value by 0.01 until it can be detected by the detection function or until the start
     while not closest_bbox(det_fn(perturbed_img), bbox)[1] > 0.5 and eps > start:
         eps -= 0.01
-        perturbed_img = fgsm_attack(image, eps, data_grad, *bbox)
+        perturbed_img = fgsm_attack(image, eps, data_grad, mask, *bbox)
+        
+    print(np.array_equal(cv2.imread("_2cantdetect.png"), save_img))
     
-    save_img = np.moveaxis((perturbed_img.detach().numpy() * 255).squeeze(), 0, -1).astype('uint8')
-    cv2.imwrite('_3maxcandetect.jpg', cv2.cvtColor(save_img, cv2.COLOR_RGB2BGR))
+    save_img = cv2.cvtColor(np.moveaxis((perturbed_img.detach().numpy() * 255).squeeze(), 0, -1).astype('uint8'), cv2.COLOR_RGB2BGR)
+    cv2.imwrite('_3maxcandetect.png', save_img)
     print("\tmax e detectable | closest bbox:", closest_bbox(det_fn(perturbed_img), bbox), "eps:", eps)
     
     # Add an additional 0.01 so that the returned value is the last epsilon value that the model was unable to detect

@@ -8,3 +8,5 @@ pytorchyolo/
 *.png
 *.jpg
 *.csv
+_2cantdetect.jpg
+*.jpg
