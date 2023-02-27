@@ -8,8 +8,6 @@ from pytorchyolo import detect, models
 import os
 import gdown 
 
-insane = ""
-
 def yunet_onnx():
     model_file=[
         'face_detection_yunet_2022mar.onnx'
@@ -87,23 +85,31 @@ def fgsm_attack(image, epsilon, data_grad, mask, x1, y1, x2, y2):
 def min_model_eps(image, data_grad, det_fn, mask, bbox, start = 0., end = 3, step = 0.05):
     # Set epsilon to the start value
     eps = start
-    print("\tbefore perturbation | closest bbox:", closest_bbox(det_fn(image), bbox), "eps:", eps)
+    
+    #print("\tbefore perturbation | closest bbox:", closest_bbox(det_fn(image), bbox), "eps:", eps)
+    
+    # If the current face cannot be detected
     _, iou = closest_bbox(det_fn(image), bbox)
     if iou <= 0.5:
         return 0
+    
     perturbed_img = image.clone().detach()
     
+    """ # Save img sample
     save_img = cv2.cvtColor(np.moveaxis((perturbed_img.detach().numpy() * 255).squeeze(), 0, -1).astype('uint8'), cv2.COLOR_RGB2BGR)
     cv2.imwrite('_1unperturbed.png', save_img)
+    """
     
     # Increase the epsilon value by 0.05 until it cannot be detected by the detection function or until the end
     while closest_bbox(det_fn(perturbed_img), bbox)[1] > 0.5 and eps < end:
         eps += 0.05
         perturbed_img = fgsm_attack(image, eps, data_grad, mask, *bbox)
     
+    """ # Save img sample
     save_img = cv2.cvtColor(np.moveaxis((perturbed_img.detach().numpy() * 255).squeeze(), 0, -1).astype('uint8'), cv2.COLOR_RGB2BGR)
     cv2.imwrite('_2cantdetect.png', save_img)
     print("\te undetectable | closest bbox:", closest_bbox(det_fn(perturbed_img), bbox), "eps:", eps)
+    """
     
     # Decrease the epsilon value by 0.01 until it can be detected by the detection function or until the start
     while not closest_bbox(det_fn(perturbed_img), bbox)[1] > 0.5 and eps > start:
@@ -112,13 +118,16 @@ def min_model_eps(image, data_grad, det_fn, mask, bbox, start = 0., end = 3, ste
         
     print(np.array_equal(cv2.imread("_2cantdetect.png"), save_img))
     
+    """ # Save img sample
     save_img = cv2.cvtColor(np.moveaxis((perturbed_img.detach().numpy() * 255).squeeze(), 0, -1).astype('uint8'), cv2.COLOR_RGB2BGR)
     cv2.imwrite('_3maxcandetect.png', save_img)
     print("\tmax e detectable | closest bbox:", closest_bbox(det_fn(perturbed_img), bbox), "eps:", eps)
+    """
     
     # Add an additional 0.01 so that the returned value is the last epsilon value that the model was unable to detect
     return eps + 0.01
 
+# MediPipe detection function, accepts pytorch tensors returns bounding boxes (x1, y1, x2, y2)
 def mp_det_fn(image, return_boxes = True):
     image = np.moveaxis((image.detach().numpy() * 255).squeeze(), 0, -1).astype('uint8')
     with mp_face_detection.FaceDetection(min_detection_confidence=0.5, model_selection=0) as face_detection:
@@ -138,11 +147,14 @@ def mp_det_fn(image, return_boxes = True):
                 ))]
                 
             return bboxes
-    
+
+# YuNet detection function, accepts pytorch tensors returns bounding boxes (x1, y1, x2, y2)
 def yn_det_fn(image, return_boxes = True):
     image = np.moveaxis((image.detach().numpy() * 255).squeeze(), 0, -1).astype('uint8')
     height, width, _ = image.shape
     yn_face_detector.setInputSize((width, height))
+    yn_face_detector.setNMSThreshold(0.5)
+    yn_face_detector.setScoreThreshold(0.5)
     _, faces = yn_face_detector.detect(cv2.cvtColor(image, cv2.COLOR_RGB2BGR))
     if not return_boxes:
         return faces is not None
@@ -159,6 +171,7 @@ def yn_det_fn(image, return_boxes = True):
             ))]
         return bboxes
 
+# YoloFace detection function, accepts pytorch tensors returns bounding boxes (x1, y1, x2, y2)
 def yf_det_fn(image, return_boxes = True):
     image = np.moveaxis((image.detach().numpy() * 255).squeeze(), 0, -1).astype('uint8')
     bboxes = detect.detect_image(yf_face_detector, image)
@@ -167,12 +180,13 @@ def yf_det_fn(image, return_boxes = True):
     else:
         return [tuple(map(int, bbox[:4])) for bbox in bboxes]
     
-# mediapipe stuff
+# MediaPipe detector init
 mp_face_detection = mp.solutions.face_detection
 mp_drawing = mp.solutions.drawing_utils
     
-# yunet stuff
+# YuNet detector init
 yunet_onnx()
 yn_face_detector = cv2.FaceDetectorYN_create("onnx/face_detection_yunet_2022mar.onnx", "", (0, 0))
 
+# YoloFace detector init
 _, yf_face_detector = models.load_model('./weights/yolo_face_sthanhng.cfg', "./weights/yolo_face_sthanhng.weights")
