@@ -116,7 +116,7 @@ def min_model_eps(image, data_grad, det_fn, mask, bbox, start = 0., end = 3, ste
         eps -= 0.01
         perturbed_img = fgsm_attack(image, eps, data_grad, mask, *bbox)
         
-    print(np.array_equal(cv2.imread("_2cantdetect.png"), save_img))
+    #print(np.array_equal(cv2.imread("_2cantdetect.png"), save_img))
     
     """ # Save img sample
     save_img = cv2.cvtColor(np.moveaxis((perturbed_img.detach().numpy() * 255).squeeze(), 0, -1).astype('uint8'), cv2.COLOR_RGB2BGR)
