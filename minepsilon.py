@@ -90,7 +90,8 @@ def min_model_eps(image, data_grad, det_fn, mask, bbox, start = 0., end = 3, ste
     
     # If the current face cannot be detected
     _, iou = closest_bbox(det_fn(image), bbox)
-    if iou <= 0.5:
+    #print("IOU:", iou)
+    if iou <= 0.40:
         return 0
     
     perturbed_img = image.clone().detach()
@@ -102,7 +103,7 @@ def min_model_eps(image, data_grad, det_fn, mask, bbox, start = 0., end = 3, ste
     
     # Increase the epsilon value by 0.05 until it cannot be detected by the detection function or until the end
     while closest_bbox(det_fn(perturbed_img), bbox)[1] > 0.5 and eps < end:
-        eps += 0.05
+        eps += 0.025
         perturbed_img = fgsm_attack(image, eps, data_grad, mask, *bbox)
     
     """ # Save img sample
@@ -113,7 +114,7 @@ def min_model_eps(image, data_grad, det_fn, mask, bbox, start = 0., end = 3, ste
     
     # Decrease the epsilon value by 0.01 until it can be detected by the detection function or until the start
     while not closest_bbox(det_fn(perturbed_img), bbox)[1] > 0.5 and eps > start:
-        eps -= 0.01
+        eps -= 0.005
         perturbed_img = fgsm_attack(image, eps, data_grad, mask, *bbox)
         
     #print(np.array_equal(cv2.imread("_2cantdetect.png"), save_img))
