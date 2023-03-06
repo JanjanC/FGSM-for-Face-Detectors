@@ -140,6 +140,7 @@ class YOLOLayer(nn.Module):
         self.register_buffer(
             'anchor_grid', anchors.clone().view(1, -1, 1, 1, 2))
         self.stride = None
+        self.gradient_mode = False
 
     def forward(self, x, img_size):
         stride = img_size // x.size(2)
@@ -147,7 +148,7 @@ class YOLOLayer(nn.Module):
         bs, _, ny, nx = x.shape  # x(bs,255,20,20) to x(bs,3,20,20,85)
         x = x.view(bs, self.num_anchors, self.no, ny, nx).permute(0, 1, 3, 4, 2).contiguous()
 
-        if not self.training:  # inference
+        if not self.training and not self.gradient_mode:  # inference
             if self.grid.shape[2:4] != x.shape[2:4]:
                 self.grid = self._make_grid(nx, ny).to(x.device)
 
@@ -175,6 +176,7 @@ class Darknet(nn.Module):
                             for layer in self.module_list if isinstance(layer[0], YOLOLayer)]
         self.seen = 0
         self.header_info = np.array([0, 0, 0, self.seen, 0], dtype=np.int32)
+        self.gradient_mode = False
 
     def forward(self, x):
         img_size = x.size(2)
@@ -194,7 +196,7 @@ class Darknet(nn.Module):
                 x = module[0](x, img_size)
                 yolo_outputs.append(x)
             layer_outputs.append(x)
-        return yolo_outputs if self.training else torch.cat(yolo_outputs, 1)
+        return yolo_outputs if self.training or self.gradient_mode else torch.cat(yolo_outputs, 1)
 
     def load_darknet_weights(self, weights_path):
         """Parses and loads the weights stored in 'weights_path'"""
