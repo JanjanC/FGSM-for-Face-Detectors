@@ -58,6 +58,7 @@ def get_iou(ground_truth, pred):
 
 def closest_bbox(bboxes, target_bbox):
     ious = []
+    #print(bboxes, target_bbox)
     for bbox in bboxes:
         iou = get_iou(bbox, target_bbox)
         if iou == 1:
@@ -69,13 +70,23 @@ def closest_bbox(bboxes, target_bbox):
         return [], 0
 
 # FGSM attack code
-def fgsm_attack(image, epsilon, data_grad, mask, x1, y1, x2, y2):
+def fgsm_attack(image, e, data_grad, mask):
     # Collect the element-wise sign of the data gradient
     image = image.clone().detach()
     sign_data_grad = data_grad.sign()
     # Create the perturbed image by adjusting each pixel of the input image
     perturbed_image = image
-    perturbed_image[:, :, y1:y2, x1:x2] = perturbed_image[:, :, y1:y2, x1:x2] + epsilon * sign_data_grad[:, :, y1:y2, x1:x2] * mask 
+    """
+    if bbox is not None:
+        x1, y1, x2, y2 = bbox
+        if mask is not None:
+            perturbed_image[..., y1:y2, x1:x2] = perturbed_image[..., y1:y2, x1:x2] + e * sign_data_grad[..., y1:y2, x1:x2] * mask 
+        else:
+            perturbed_image[..., y1:y2, x1:x2] = perturbed_image[..., y1:y2, x1:x2] + e * sign_data_grad[..., y1:y2, x1:x2]
+    else:
+        perturbed_image = perturbed_image + e * sign_data_grad
+    """
+    perturbed_image = perturbed_image + e * sign_data_grad * mask
     # apply it only to the face region
     # Adding clipping to maintain [0,1] range
     perturbed_image = torch.clamp(perturbed_image, 0, 1)
@@ -102,20 +113,25 @@ def min_model_eps(image, data_grad, det_fn, mask, bbox, start = 0., end = 3, ste
     """
     
     # Increase the epsilon value by 0.05 until it cannot be detected by the detection function or until the end
-    while closest_bbox(det_fn(perturbed_img), bbox)[1] > 0.5 and eps < end:
-        eps += 0.025
-        perturbed_img = fgsm_attack(image, eps, data_grad, mask, *bbox)
+    while closest_bbox(det_fn(perturbed_img), bbox)[1] > 0.3 and eps < end:
+        step = 0.025 if eps < 1 else 0.05
+        eps += step
+        perturbed_img = fgsm_attack(image, eps, data_grad, mask)
     
     """ # Save img sample
     save_img = cv2.cvtColor(np.moveaxis((perturbed_img.detach().numpy() * 255).squeeze(), 0, -1).astype('uint8'), cv2.COLOR_RGB2BGR)
     cv2.imwrite('_2cantdetect.png', save_img)
     print("\te undetectable | closest bbox:", closest_bbox(det_fn(perturbed_img), bbox), "eps:", eps)
     """
+    #print("IOU2:", closest_bbox(det_fn(perturbed_img), bbox)[1])
     
     # Decrease the epsilon value by 0.01 until it can be detected by the detection function or until the start
-    while not closest_bbox(det_fn(perturbed_img), bbox)[1] > 0.5 and eps > start:
-        eps -= 0.005
-        perturbed_img = fgsm_attack(image, eps, data_grad, mask, *bbox)
+    while not closest_bbox(det_fn(perturbed_img), bbox)[1] > 0.3 and eps > start:
+        step = 0.005 if eps < 1 else 0.01
+        eps -= step
+        perturbed_img = fgsm_attack(image, eps, data_grad, mask)
+        
+    #print("IOU3:", closest_bbox(det_fn(perturbed_img), bbox)[1])
         
     #print(np.array_equal(cv2.imread("_2cantdetect.png"), save_img))
     
@@ -126,7 +142,7 @@ def min_model_eps(image, data_grad, det_fn, mask, bbox, start = 0., end = 3, ste
     """
     
     # Add an additional 0.01 so that the returned value is the last epsilon value that the model was unable to detect
-    return eps + 0.01
+    return eps + step
 
 # MediPipe detection function, accepts pytorch tensors returns bounding boxes (x1, y1, x2, y2)
 def mp_det_fn(image, return_boxes = True):
@@ -138,13 +154,16 @@ def mp_det_fn(image, return_boxes = True):
         else:
             if results.detections is None:
                 return []
+            #print("MP detected n faces:", len(results.detections))
             bboxes = []
             for detection in results.detections:
                 bbox = detection.location_data.relative_bounding_box
                 height, width, _ = image.shape
+                #print(np.clip(bbox.xmin, 0., 1.), np.clip(bbox.xmin, 0., 1.))
+                #print(bbox.xmin + bbox.width, bbox.ymin + bbox.height, np.clip(bbox.xmin + bbox.width, 0, 1), np.clip(bbox.ymin + bbox.height, 0, 1))
                 bboxes += [tuple((
-                    *mp_drawing._normalized_to_pixel_coordinates(bbox.xmin, bbox.ymin, width, height),
-                    *mp_drawing._normalized_to_pixel_coordinates(bbox.xmin + bbox.width, bbox.ymin + bbox.height, width, height)
+                    *mp_drawing._normalized_to_pixel_coordinates(np.clip(bbox.xmin, 0., 1.), np.clip(bbox.ymin, 0., 1.), width, height),
+                    *mp_drawing._normalized_to_pixel_coordinates(np.clip(bbox.xmin + bbox.width, 0., 1.), np.clip(bbox.ymin + bbox.height, 0., 1.), width, height)
                 ))]
                 
             return bboxes
@@ -162,6 +181,7 @@ def yn_det_fn(image, return_boxes = True):
     else:
         if faces is None:
             return []
+        #print("YN detected n faces:", len(faces))
         bboxes = []
         for face in faces:
             bboxes += [tuple((
