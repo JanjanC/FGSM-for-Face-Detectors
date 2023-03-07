@@ -93,7 +93,7 @@ def fgsm_attack(image, e, data_grad, mask):
     # Return the perturbed image
     return perturbed_image
     
-def min_model_eps(image, data_grad, det_fn, mask, bbox, start = 0., end = 3, step = 0.05):
+def min_model_eps(image, data_grad, det_fn, mask, bbox, start = 0., end = 3, step = 0.05, background=False):
     # Set epsilon to the start value
     eps = start
     
@@ -114,7 +114,10 @@ def min_model_eps(image, data_grad, det_fn, mask, bbox, start = 0., end = 3, ste
     
     # Increase the epsilon value by 0.05 until it cannot be detected by the detection function or until the end
     while closest_bbox(det_fn(perturbed_img), bbox)[1] > 0.3 and eps < end:
-        step = 0.025 if eps < 1 else 0.05
+        if background:
+            step = 0.5
+        else:
+            step = 0.025 if eps < 1 else 0.05
         eps += step
         perturbed_img = fgsm_attack(image, eps, data_grad, mask)
     
