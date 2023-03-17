@@ -10,3 +10,5 @@ pytorchyolo/
 *.csv
 _2cantdetect.jpg
 *.jpg
+*.pkl
+*.pkl
