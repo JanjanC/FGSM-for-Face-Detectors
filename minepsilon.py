@@ -8,9 +8,6 @@ from pytorchyolo import detect, models
 import os
 import gdown 
 
-conf_thres=0.5
-nms_thres=0.5
-
 def yunet_onnx():
     model_file=[
         'face_detection_yunet_2022mar.onnx'
@@ -120,7 +117,7 @@ def min_model_eps(image, data_grad, det_fn, mask, bbox, start = 0., end = 3, ste
         if background:
             step = 0.5
         else:
-            step = 0.025 if eps < 1 else 0.5
+            step = 0.025 if eps < 1 else 0.05
         eps += step
         perturbed_img = fgsm_attack(image, eps, data_grad, mask)
     
@@ -148,8 +145,6 @@ def min_model_eps(image, data_grad, det_fn, mask, bbox, start = 0., end = 3, ste
     """
     
     # Add an additional 0.01 so that the returned value is the last epsilon value that the model was unable to detect
-    if not background and eps >= 3:
-        return 3.0999999999999974
     return eps + step
 
 def binary_search(low, high, image, data_grad, det_fn, mask, bbox, background=False):
@@ -175,7 +170,7 @@ def binary_search(low, high, image, data_grad, det_fn, mask, bbox, background=Fa
 # MediPipe detection function, accepts pytorch tensors returns bounding boxes (x1, y1, x2, y2)
 def mp_det_fn(image, return_boxes = True):
     image = np.moveaxis((image.detach().numpy() * 255).squeeze(), 0, -1).astype('uint8')
-    with mp_face_detection.FaceDetection(min_detection_confidence=conf_thres, model_selection=0) as face_detection:
+    with mp_face_detection.FaceDetection(min_detection_confidence=0.5, model_selection=0) as face_detection:
         results = face_detection.process(image)
         if not return_boxes:
             return results.detections is not None
@@ -201,8 +196,6 @@ def yn_det_fn(image, return_boxes = True):
     image = np.moveaxis((image.detach().numpy() * 255).squeeze(), 0, -1).astype('uint8')
     height, width, _ = image.shape
     yn_face_detector.setInputSize((width, height))
-    yn_face_detector.setNMSThreshold(nms_thres)
-    yn_face_detector.setScoreThreshold(conf_thres)
     _, faces = yn_face_detector.detect(cv2.cvtColor(image, cv2.COLOR_RGB2BGR))
     if not return_boxes:
         return faces is not None
@@ -223,7 +216,7 @@ def yn_det_fn(image, return_boxes = True):
 # YoloFace detection function, accepts pytorch tensors returns bounding boxes (x1, y1, x2, y2)
 def yf_det_fn(image, return_boxes = True):
     image = np.moveaxis((image.detach().numpy() * 255).squeeze(), 0, -1).astype('uint8')
-    bboxes = detect.detect_image(yf_face_detector, image, conf_thres=conf_thres, nms_thres=nms_thres)
+    bboxes = detect.detect_image(yf_face_detector, image, conf_thres=0.5, nms_thres=0.5)
     if not return_boxes:
         return bboxes is not None
     else:
