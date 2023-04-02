@@ -7,8 +7,8 @@ import cv2
 import torchvision.transforms as transforms
 from pytorchyolo.utils.transforms import Resize, DEFAULT_TRANSFORMS
 
-OUTPUT_FOLDER = os.path.join(os.getcwd(), "WIDER")
-folders = ['2--Demonstration', '6--Funeral', '10--People_Marching', '14--Traffic', '18--Concerts', '22--Picnic', '26--Soldier_Drilling', '30--Surgeons', '34--Baseball', '38--Tennis', '42--Car_Racing', '46--Jockey', '50--Celebration_Or_Party', '54--Rescue', '58--Hockey', 'img_celeba_102', 'img_celeba_103', 'img_celeba_104', 'img_celeba_105', 'img_celeba_106', 'img_celeba_107', 'img_celeba_108', 'img_celeba_109', 'img_celeba_110', 'img_celeba_111', 'img_celeba_112', 'img_celeba_113', 'img_celeba_114', 'img_celeba_115', 'img_celeba_116', 'img_celeba_117', 'img_celeba_118', 'img_celeba_119', 'img_celeba_120', 'img_celeba_121', 'img_celeba_122', 'img_celeba_123', 'img_celeba_124', 'img_celeba_125', 'img_celeba_126', 'img_celeba_127', 'img_celeba_128', 'img_celeba_129', 'img_celeba_130', 'img_celeba_131', 'img_celeba_132', 'img_celeba_133', 'img_celeba_134', 'img_celeba_135', 'img_celeba_136', 'img_celeba_137', 'img_celeba_138', 'img_celeba_139', 'img_celeba_140', 'img_celeba_141', 'img_celeba_142', 'img_celeba_143', 'img_celeba_144', 'img_celeba_145', 'img_celeba_146', 'img_celeba_147', 'img_celeba_148', 'img_celeba_149', 'img_celeba_150', 'img_celeba_151', 'img_celeba_152']
+OUTPUT_FOLDER = os.path.join(os.getcwd(), "faceseg-outs")
+folders = []
 
 # REPLACE folders with your own folders
 
