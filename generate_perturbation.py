@@ -303,6 +303,11 @@ from data_loader import get_dataloader
 from models.encoder_decoder_faceoccnet import FaceOccNet 
 from torch_utils import torch_load_weights,evaluation,viz_notebook,plot_confusion_matrix  
 
+from tqdm import tqdm as fs_tqdm
+from skimage import measure
+import matplotlib.pyplot as plt
+from data_tools import decode_mask2img,encode_img2mask
+
 '''
 Visualization function for tensorboard and notebook
 '''
@@ -355,7 +360,7 @@ def viz_notebook_brew(fs_model,eval_dataloader,fs_device,ibv_stop=-1):
 #                 plt.title(f'Prediction {pred_tmp.shape[0]}')
 #                 plt.imshow(pred_tmp)
 #                 plt.axis('off')                                                                                
-                plt.imsave(MASK_PATH + '\\' + 'mask_' + fn[face_count], pred_tmp)
+                plt.imsave(MASK_PATH + '\\' + 'mask' + fn[face_count], pred_tmp)
                 
                 face_count+=1
                 
@@ -398,7 +403,8 @@ def pipeline(model, device, path, eps_model, color_space, region, mode):
     row['path'] = path
     row['source_file'] = path.split("\\")[-1]
     file_basename = os.path.basename(path)
-    
+    filename = file_basename.split(".")[0]
+
     model.eval()
 
     model.gradient_mode = False
@@ -474,7 +480,7 @@ def pipeline(model, device, path, eps_model, color_space, region, mode):
         pad_image = detach_cpu(data)[:, :, y1_pad:y2_pad, x1_pad:x2_pad] #get the first dimension, the channels, and crop it
         pad_image = tensor_to_image(pad_image) #reshape the image to (w/h, h/w, channel)
         
-        face_filename = file_basename + "_" + str(face_index)
+        face_filename = filename + "_" + str(face_index)
         
         # Original Pad Size
         # GET THE LONGEST MAX AND THEN PAD
