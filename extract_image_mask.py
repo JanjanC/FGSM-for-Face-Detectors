@@ -254,28 +254,30 @@ PROCESS_PATH = os.path.join(os.getcwd(), OUTPUT_FOLDER, '_process')
 CSV_PATH = os.path.join(os.getcwd(), OUTPUT_FOLDER, '_csv')
 MASK_PATH = os.path.join(os.getcwd(), OUTPUT_FOLDER, '_mask')
 
-if not os.path.exists(BBOX_PATH):
-    os.mkdir(BBOX_PATH)
+def create_folders():
+    if not os.path.exists(BBOX_PATH):
+        os.mkdir(BBOX_PATH)
 
-if not os.path.exists(BBOX_PATH):
-    os.mkdir(BBOX_PATH)
+    if not os.path.exists(BBOX_PATH):
+        os.mkdir(BBOX_PATH)
 
-if not os.path.exists(PAD_PATH):
-    os.mkdir(PAD_PATH)
+    if not os.path.exists(PAD_PATH):
+        os.mkdir(PAD_PATH)
 
-if not os.path.exists(ORIG_PAD_PATH):
-    os.mkdir(ORIG_PAD_PATH)
+    if not os.path.exists(ORIG_PAD_PATH):
+        os.mkdir(ORIG_PAD_PATH)
 
-if not os.path.exists(PROCESS_PATH):
-    os.mkdir(PROCESS_PATH)
+    if not os.path.exists(PROCESS_PATH):
+        os.mkdir(PROCESS_PATH)
 
-if not os.path.exists(CSV_PATH):
-    os.mkdir(CSV_PATH)
+    if not os.path.exists(CSV_PATH):
+        os.mkdir(CSV_PATH)
 
-if not os.path.exists(MASK_PATH):
-    os.mkdir(MASK_PATH)
+    if not os.path.exists(MASK_PATH):
+        os.mkdir(MASK_PATH)
     
 def create_mask(img_path):
+    create_folders()
     pipeline(img_path)
     counter = 0
     
@@ -392,4 +394,44 @@ def create_mask(img_path):
             sum_img_orig = sum_img_orig.save(APPLIED_MASK_PATH + "\\" + filename)
 
     pixels_df.to_csv(os.path.join(CSV_PATH, 'dataset_pixels' + str(int(time.time())) + '.csv'), index=False)  #save to csv        
-    no_whites_df.to_csv(os.path.join(CSV_PATH, 'dataset_no_whites' + str(int(time.time())) + '.csv'), index=False)  #save to csv      
+    no_whites_df.to_csv(os.path.join(CSV_PATH, 'dataset_no_whites' + str(int(time.time())) + '.csv'), index=False)  #save to csv 
+    
+    purge_folders()
+    
+    
+def purge_folders():
+    OUTPUT_FOLDER = os.path.join(os.getcwd(), "_temp")
+    
+    
+    
+    BBOX_PATH = os.path.join(os.getcwd(), OUTPUT_FOLDER, '_box')
+    if os.path.exists(BBOX_PATH):
+        shutil.rmtree(BBOX_PATH)
+        
+    PAD_PATH = os.path.join(os.getcwd(), OUTPUT_FOLDER, '_pad')
+    if os.path.exists(PAD_PATH):
+        shutil.rmtree(PAD_PATH)
+        
+    ORIG_PAD_PATH = os.path.join(os.getcwd(), OUTPUT_FOLDER, '_original_pad')
+    if os.path.exists(ORIG_PAD_PATH):
+        shutil.rmtree(ORIG_PAD_PATH)
+        
+    PROCESS_PATH = os.path.join(os.getcwd(), OUTPUT_FOLDER, '_process')
+    if os.path.exists(PROCESS_PATH):
+        shutil.rmtree(PROCESS_PATH)
+        
+    CSV_PATH = os.path.join(os.getcwd(), OUTPUT_FOLDER, '_csv')
+    if os.path.exists(CSV_PATH):
+        shutil.rmtree(CSV_PATH)
+        
+    MASK_PATH = os.path.join(os.getcwd(), OUTPUT_FOLDER, '_mask')
+    if os.path.exists(MASK_PATH):
+        shutil.rmtree(MASK_PATH)
+
+    INTERMEDIATE_PATH = os.path.join(os.getcwd(),OUTPUT_FOLDER, '_intermediate_' + str(1))
+    if os.path.exists(INTERMEDIATE_PATH):
+        shutil.rmtree(INTERMEDIATE_PATH)
+        
+    APPLIED_MASK_PATH = os.path.join(os.getcwd(), OUTPUT_FOLDER, '_applied_mask')
+    if os.path.exists(APPLIED_MASK_PATH):
+        shutil.rmtree(APPLIED_MASK_PATH)
