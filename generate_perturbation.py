@@ -1,3 +1,4 @@
+import sys
 import os
 import time
 import glob
@@ -13,6 +14,8 @@ import matplotlib.pyplot as plt
 import skimage.feature as feature
 import xlwings as xw
 import torchvision.transforms as transforms
+from PIL import Image
+import shutil
 
 import random
 
@@ -287,10 +290,79 @@ def extract_image_attributes(row, path, face_index, image, version):
 
 
 
+import sys
+import os
+import torch
+import torchvision
+import numpy as np
+import pandas as pd
+sys.path.append('src_release')
 
+#libraries for face segmentation
+from data_loader import get_dataloader
+from models.encoder_decoder_faceoccnet import FaceOccNet 
+from torch_utils import torch_load_weights,evaluation,viz_notebook,plot_confusion_matrix  
 
+'''
+Visualization function for tensorboard and notebook
+'''
+def tf_viz_img(mask_tmp,i,pred=True):
+    if pred:
+        mask_tmp = torch.argmax(mask_tmp[i], dim=0).numpy().copy()
+    else:
+        mask_tmp = mask_tmp[i].numpy().copy()
+    mask_tmp = decode_mask2img(mask_tmp)
+    mask_tmp = np.transpose(mask_tmp, (2,0,1))
+    mask_tmp = mask_tmp / 255.0
+    return mask_tmp
 
-
+'''
+Main Visualization function
+'''
+def viz_notebook_brew(fs_model,eval_dataloader,fs_device,ibv_stop=-1):
+    import matplotlib.pyplot as plt
+    unorm = torchvision.transforms.Compose([ torchvision.transforms.Normalize((-1, -1, -1), (2, 2, 2))])
+    #batch_val = iter(eval_dataloader).next()
+    fs_model.eval()
+    
+    with torch.no_grad():
+        for ibv, batch_val in fs_tqdm(enumerate(eval_dataloader),
+                               desc='viz'):
+            fs_img, mask_gt, mask_sp, fn = batch_val
+            pred_mask, _ = fs_model(fs_img.to(fs_device))
+            pred_mask = pred_mask.cpu()
+            mask_gt = mask_gt.cpu().data
+            face_count = 0
+            for b in range(pred_mask.shape[0]):
+                pred_tmp = tf_viz_img(pred_mask,b,pred=True)
+                # mask_gt_tmp = tf_viz_img(mask_gt,b,pred=False)
+                pred_tmp = np.transpose(pred_tmp, (1,2,0))
+                # mask_gt_tmp = np.transpose(mask_gt_tmp, (1,2,0))
+                ##plotting
+#                 fig = plt.figure()
+#                 plt.subplot(1,3,1)
+#                 plt.title(f'Image {fs_img[b].shape[2]}')
+#                 plt.imshow(np.transpose(unorm(fs_img[b]), (1,2,0)))
+#                 plt.axis('off')
+                print("IMAGE FILENAME IS: " + fn[face_count])
+                                
+                # TURN THE BLUE AND GREEN PRED_TMP TO WHITE
+                # Convert non-black pixels to white
+                non_black_pixels_mask = np.any(pred_tmp != [0, 0, 0], axis=-1)  
+                pred_tmp[non_black_pixels_mask] = [1, 1, 1]     
+                
+#                 plt.subplot(1,3,2)
+#                 plt.title(f'Prediction {pred_tmp.shape[0]}')
+#                 plt.imshow(pred_tmp)
+#                 plt.axis('off')                                                                                
+                plt.imsave(MASK_PATH + '\\' + 'mask_' + fn[face_count], pred_tmp)
+                
+                face_count+=1
+                
+#                 plt.show()
+#                 plt.close(fig)
+            if ibv_stop == ibv:
+                break        
 
 
 
@@ -312,7 +384,9 @@ def fgsm_attack(image, e, data_grad, bbox):
 
 
 
-
+TEMP_PATH = os.path.join(os.getcwd(), '_temp')
+if not os.path.exists(TEMP_PATH):
+    os.mkdir(TEMP_PATH)
 
 #mode 0 - mask, 1 - bbox, 2-lbbox
 def pipeline(model, device, path, eps_model, color_space, region, mode):
@@ -322,6 +396,7 @@ def pipeline(model, device, path, eps_model, color_space, region, mode):
     
     df = pd.DataFrame() # dataframe storing the dataset
     row['path'] = path
+    row['source_file'] = path.split("\\")[-1]
     file_basename = os.path.basename(path)
     
     model.eval()
@@ -386,37 +461,71 @@ def pipeline(model, device, path, eps_model, color_space, region, mode):
         x2 = min(int(np.ceil((x + w / 2).detach().cpu().numpy())), 415)
         y2 = min(int(np.ceil((y + h / 2).detach().cpu().numpy())), 415)
         
-# #         ----------------------------------------------
-#         #save mask
-#         x1_pad = max(int(np.floor((x - w).detach().cpu().numpy())), 0) # prevent negative values
-#         y1_pad = max(int(np.floor((y - h).detach().cpu().numpy())), 0)
-#         x2_pad = min(int(np.ceil((x + w).detach().cpu().numpy())), 415) # prevent from getting out of range
-#         y2_pad = min(int(np.ceil((y + h).detach().cpu().numpy())), 415)
+#         ----------------------------------------------
+        #save mask
 
-#         row['x1_pad'], row['y1_pad'], row['x2_pad'], row['y2_pad'] = x1_pad, y1_pad, x2_pad, y2_pad
+        x1_pad = max(int(np.floor((x - w).detach().cpu().numpy())), 0) # prevent negative values
+        y1_pad = max(int(np.floor((y - h).detach().cpu().numpy())), 0)
+        x2_pad = min(int(np.ceil((x + w).detach().cpu().numpy())), 415) # prevent from getting out of range
+        y2_pad = min(int(np.ceil((y + h).detach().cpu().numpy())), 415)
 
-#         pad_image = detach_cpu(data)[:, :, y1_pad:y2_pad, x1_pad:x2_pad] #get the first dimension, the channels, and crop it
-#         pad_image = tensor_to_image(pad_image) #reshape the image to (w/h, h/w, channel)
+        row['x1_pad'], row['y1_pad'], row['x2_pad'], row['y2_pad'] = x1_pad, y1_pad, x2_pad, y2_pad
 
-#         # Original Pad Size
-#         # GET THE LONGEST MAX AND THEN PAD
-#         greater_size = max((x2_pad - x1_pad),(y2_pad - y1_pad))
-#         orig_pad_image = np.transpose(transforms.Compose([DEFAULT_TRANSFORMS,Resize(greater_size)])((pad_image, np.zeros((1, 5))))[0], (1, 2, 0)).numpy() # resize image to GREATER SIZE
-#         orig_pad_image = (orig_pad_image * 255).astype(np.uint8)
-#         orig_pad_image = cv2.cvtColor(orig_pad_image, cv2.COLOR_RGB2BGR)         
-#         cv2.imwrite(os.path.join(ORIG_PAD_PATH, "mask_" + face_filename + "_image_final.png"), orig_pad_image)
-
-#         pad_image = np.transpose(transforms.Compose([DEFAULT_TRANSFORMS,Resize(128)])((pad_image, np.zeros((1, 5))))[0], (1, 2, 0)).numpy() # resize image to 128x128
-#         pad_image = (pad_image * 255).astype(np.uint8)
-#         #save mask end
-# #       ----------------------------------------------
-
-#         bbox = (x1, y1, x2, y2)
-#         mask, used_mask = load_mask(os.path.basename(path), face_index, bbox)
-#         row['used_mask'] = used_mask
+        pad_image = detach_cpu(data)[:, :, y1_pad:y2_pad, x1_pad:x2_pad] #get the first dimension, the channels, and crop it
+        pad_image = tensor_to_image(pad_image) #reshape the image to (w/h, h/w, channel)
         
+        face_filename = file_basename + "_" + str(face_index)
         
+        # Original Pad Size
+        # GET THE LONGEST MAX AND THEN PAD
+        greater_size = max((x2_pad - x1_pad),(y2_pad - y1_pad))
+        orig_pad_image = np.transpose(transforms.Compose([DEFAULT_TRANSFORMS,Resize(greater_size)])((pad_image, np.zeros((1, 5))))[0], (1, 2, 0)).numpy() # resize image to GREATER SIZE
+        orig_pad_image = (orig_pad_image * 255).astype(np.uint8)
+        orig_pad_image = cv2.cvtColor(orig_pad_image, cv2.COLOR_RGB2BGR)         
+        cv2.imwrite(os.path.join(TEMP_PATH, "mask_" + face_filename + "_image_final.png"), orig_pad_image)
+
+        pad_image = np.transpose(transforms.Compose([DEFAULT_TRANSFORMS,Resize(128)])((pad_image, np.zeros((1, 5))))[0], (1, 2, 0)).numpy() # resize image to 128x128
+        pad_image = (pad_image * 255).astype(np.uint8)
         
+        row['mask_filename'] = "mask_" + face_filename + "_image_final.png"
+            
+        # SAVE AS 24-BIT PNG WITH THE FORMAT OF IMAGEFILENAME_NO STUFF AND SUFFIX
+        im = Image.fromarray(pad_image)
+        im.save(TEMP_PATH + "\\" +  face_filename + "_image_final.png")
+
+        # [DUPLICATE WITH THE BLACK.PNG]            
+        # Create the black _cc_occ_labels and _sp_labels (16 bit pngs)
+        cc_occ_png = TEMP_PATH + "\\" +  face_filename + "_cc_occ_labels.png"
+        sp_png = TEMP_PATH + "\\" +  face_filename + "_sp_labels.png"
+        mask_png = TEMP_PATH + '\\' + face_filename + "_mask.png"
+
+        # black.png is reference image being duplicated
+        shutil.copyfile("black.png", (cc_occ_png))
+        shutil.copyfile("black.png", (sp_png))    
+
+        pad_image = cv2.cvtColor(pad_image, cv2.COLOR_RGB2BGR)
+        # cv2.imwrite(os.path.join(TEMP_PATH, row['source_file'] + str(face_index) + '.jpg'), pad_image)
+        #save mask end
+#       ----------------------------------------------
+        
+        load_model_path = ("./ptlabel_best_model.pth")
+        fs_model = FaceOccNet(input_channels=3, n_classes=3,is_regularized=True)
+        
+        fs_device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        fs_model.to(fs_device)
+        
+        # os.remove("demofile.txt")
+
+        eval_dataloader = get_dataloader((TEMP_PATH),
+                              batch_size=250,
+                              mode='eval', 
+                              num_workers = 4,
+                              n_classes=3,
+                              dataset_name='PartLabel')
+
+        viz_notebook_brew(fs_model,eval_dataloader,fs_device,ibv_stop=0)
+        
+#       ----------------------------------------------
         cropped_image = detach_cpu(data)[:, :, y1:y2, x1:x2] #get the first dimension, the channels, and crop it
         cropped_image = tensor_to_image(cropped_image) #reshape the image to (w/h, h/w, channel)
 
