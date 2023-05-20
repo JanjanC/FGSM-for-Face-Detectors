@@ -1,3 +1,12 @@
+import cv2
+import os
+import numpy as np
+import skimage.feature as feature
+
+save_color_images = True
+save_lbp_images = True
+save_gradient_images = True 
+
 class LocalBinaryPatterns:
     def __init__(self, numPoints, radius):
         self.numPoints = numPoints
@@ -24,15 +33,16 @@ def extract_color_channel(path, face_index, image, version):
     lab = cv2.cvtColor(image, cv2.COLOR_BGR2LAB)
     ycrcb = cv2.cvtColor(image, cv2.COLOR_BGR2YCrCb)
     
-    COLOR_PATH = os.path.join(FOLDER_PATH, FOLDER_NAME + '_Colors_' + version)
-    if not os.path.exists(COLOR_PATH):
-        os.mkdir(COLOR_PATH)
-    
-    cv2.imwrite(os.path.join(COLOR_PATH, os.path.splitext(os.path.basename(path))[0]) + '_RGB_' + version + '_' + str(face_index) + '.png', rgb)
-    cv2.imwrite(os.path.join(COLOR_PATH, os.path.splitext(os.path.basename(path))[0]) + '_HSV_' + version + '_' + str(face_index) + '.png', hsv)
-    cv2.imwrite(os.path.join(COLOR_PATH, os.path.splitext(os.path.basename(path))[0]) + '_HSL_' + version + '_' + str(face_index) + '.png', hls)
-    cv2.imwrite(os.path.join(COLOR_PATH, os.path.splitext(os.path.basename(path))[0]) + '_LAB_' + version + '_' + str(face_index) + '.png', lab)
-    cv2.imwrite(os.path.join(COLOR_PATH, os.path.splitext(os.path.basename(path))[0]) + '_YCRCB_' + version + '_' + str(face_index) + '.png', ycrcb)
+    if save_color_images:
+        COLOR_PATH = os.path.join(FOLDER_PATH, FOLDER_NAME + '_Colors_' + version)
+        if not os.path.exists(COLOR_PATH):
+            os.mkdir(COLOR_PATH)
+            
+        cv2.imwrite(os.path.join(COLOR_PATH, os.path.splitext(os.path.basename(path))[0]) + '_RGB_' + version + '_' + str(face_index) + '.png', rgb)
+        cv2.imwrite(os.path.join(COLOR_PATH, os.path.splitext(os.path.basename(path))[0]) + '_HSV_' + version + '_' + str(face_index) + '.png', hsv)
+        cv2.imwrite(os.path.join(COLOR_PATH, os.path.splitext(os.path.basename(path))[0]) + '_HSL_' + version + '_' + str(face_index) + '.png', hls)
+        cv2.imwrite(os.path.join(COLOR_PATH, os.path.splitext(os.path.basename(path))[0]) + '_LAB_' + version + '_' + str(face_index) + '.png', lab)
+        cv2.imwrite(os.path.join(COLOR_PATH, os.path.splitext(os.path.basename(path))[0]) + '_YCRCB_' + version + '_' + str(face_index) + '.png', ycrcb)
 
 #     # RGB Image Histogram
 #     red_hist = cv2.calcHist([rgb], [0], None, [256], [0, 256])
@@ -93,13 +103,14 @@ def extract_color_channel(path, face_index, image, version):
     g *= 255
     b *= 255
     
-    RGB_PATH = os.path.join(FOLDER_PATH, FOLDER_NAME + '_RGB_' + version)
-    if not os.path.exists(RGB_PATH):
-        os.mkdir(RGB_PATH)
-    
-    cv2.imwrite(os.path.join(RGB_PATH, os.path.splitext(os.path.basename(path))[0]) + '_R_RGB_' + version + '_' + str(face_index) + '.png', r)
-    cv2.imwrite(os.path.join(RGB_PATH, os.path.splitext(os.path.basename(path))[0]) + '_G_RGB_' + version + '_' + str(face_index) + '.png', g)
-    cv2.imwrite(os.path.join(RGB_PATH, os.path.splitext(os.path.basename(path))[0]) + '_B_RGB_' + version + '_' + str(face_index) + '.png', b)
+    if save_color_images:
+        RGB_PATH = os.path.join(FOLDER_PATH, FOLDER_NAME + '_RGB_' + version)
+        if not os.path.exists(RGB_PATH):
+            os.mkdir(RGB_PATH)
+        
+        cv2.imwrite(os.path.join(RGB_PATH, os.path.splitext(os.path.basename(path))[0]) + '_R_RGB_' + version + '_' + str(face_index) + '.png', r)
+        cv2.imwrite(os.path.join(RGB_PATH, os.path.splitext(os.path.basename(path))[0]) + '_G_RGB_' + version + '_' + str(face_index) + '.png', g)
+        cv2.imwrite(os.path.join(RGB_PATH, os.path.splitext(os.path.basename(path))[0]) + '_B_RGB_' + version + '_' + str(face_index) + '.png', b)
     
     r_hist = cv2.calcHist(r, [0], None, [26], [0, 256])
     r_hist = r_hist.ravel()
@@ -149,13 +160,14 @@ def extract_color_channel(path, face_index, image, version):
     s *= 255
     v *= 255
     
-    HSV_PATH = os.path.join(FOLDER_PATH, FOLDER_NAME + '_HSV_' + version)
-    if not os.path.exists(HSV_PATH):
-        os.mkdir(HSV_PATH)
-    
-    cv2.imwrite(os.path.join(HSV_PATH, os.path.splitext(os.path.basename(path))[0]) + '_H_HSV_' + version + '_' + str(face_index) + '.png', h)
-    cv2.imwrite(os.path.join(HSV_PATH, os.path.splitext(os.path.basename(path))[0]) + '_S_HSV_' + version + '_' + str(face_index) + '.png', s)
-    cv2.imwrite(os.path.join(HSV_PATH, os.path.splitext(os.path.basename(path))[0]) + '_V_HSV_' + version + '_' + str(face_index) + '.png', v)
+    if save_color_images:
+        HSV_PATH = os.path.join(FOLDER_PATH, FOLDER_NAME + '_HSV_' + version)
+        if not os.path.exists(HSV_PATH):
+            os.mkdir(HSV_PATH)
+        
+        cv2.imwrite(os.path.join(HSV_PATH, os.path.splitext(os.path.basename(path))[0]) + '_H_HSV_' + version + '_' + str(face_index) + '.png', h)
+        cv2.imwrite(os.path.join(HSV_PATH, os.path.splitext(os.path.basename(path))[0]) + '_S_HSV_' + version + '_' + str(face_index) + '.png', s)
+        cv2.imwrite(os.path.join(HSV_PATH, os.path.splitext(os.path.basename(path))[0]) + '_V_HSV_' + version + '_' + str(face_index) + '.png', v)
     
     h_hist_HSV = cv2.calcHist([h], [0], None, [36], [0, 361])
     h_hist_HSV = h_hist_HSV.ravel()
@@ -205,13 +217,14 @@ def extract_color_channel(path, face_index, image, version):
     l *= 255
     s *= 255
     
-    HSL_PATH = os.path.join(FOLDER_PATH, FOLDER_NAME + '_HSL_' + version)
-    if not os.path.exists(HSL_PATH):
-        os.mkdir(HSL_PATH)
-    
-    cv2.imwrite(os.path.join(HSL_PATH, os.path.splitext(os.path.basename(path))[0]) + '_H_HSL_' + version + '_' + str(face_index) + '.png', h)
-    cv2.imwrite(os.path.join(HSL_PATH, os.path.splitext(os.path.basename(path))[0]) + '_S_HSL_' + version + '_' + str(face_index) + '.png', s)
-    cv2.imwrite(os.path.join(HSL_PATH, os.path.splitext(os.path.basename(path))[0]) + '_L_HSL_' + version + '_' + str(face_index) + '.png', l)
+    if save_color_images:
+        HSL_PATH = os.path.join(FOLDER_PATH, FOLDER_NAME + '_HSL_' + version)
+        if not os.path.exists(HSL_PATH):
+            os.mkdir(HSL_PATH)
+        
+        cv2.imwrite(os.path.join(HSL_PATH, os.path.splitext(os.path.basename(path))[0]) + '_H_HSL_' + version + '_' + str(face_index) + '.png', h)
+        cv2.imwrite(os.path.join(HSL_PATH, os.path.splitext(os.path.basename(path))[0]) + '_S_HSL_' + version + '_' + str(face_index) + '.png', s)
+        cv2.imwrite(os.path.join(HSL_PATH, os.path.splitext(os.path.basename(path))[0]) + '_L_HSL_' + version + '_' + str(face_index) + '.png', l)
     
     h_hist_HSL = cv2.calcHist([h], [0], None, [36], [0, 361])
     h_hist_HSL = h_hist_HSL.ravel()
@@ -258,13 +271,14 @@ def extract_color_channel(path, face_index, image, version):
     
     l, a, b = cv2.split(lab)
     
-    LAB_PATH = os.path.join(FOLDER_PATH, FOLDER_NAME + '_LAB_' + version)
-    if not os.path.exists(LAB_PATH):
-        os.mkdir(LAB_PATH)
-    
-    cv2.imwrite(os.path.join(LAB_PATH, os.path.splitext(os.path.basename(path))[0]) + '_L_LAB_' + version + '_' + str(face_index) + '.png', l)
-    cv2.imwrite(os.path.join(LAB_PATH, os.path.splitext(os.path.basename(path))[0]) + '_A_LAB_' + version + '_' + str(face_index) + '.png', a)
-    cv2.imwrite(os.path.join(LAB_PATH, os.path.splitext(os.path.basename(path))[0]) + '_B_LAB_' + version + '_' + str(face_index) + '.png', b)
+    if save_color_images:
+        LAB_PATH = os.path.join(FOLDER_PATH, FOLDER_NAME + '_LAB_' + version)
+        if not os.path.exists(LAB_PATH):
+            os.mkdir(LAB_PATH)
+        
+        cv2.imwrite(os.path.join(LAB_PATH, os.path.splitext(os.path.basename(path))[0]) + '_L_LAB_' + version + '_' + str(face_index) + '.png', l)
+        cv2.imwrite(os.path.join(LAB_PATH, os.path.splitext(os.path.basename(path))[0]) + '_A_LAB_' + version + '_' + str(face_index) + '.png', a)
+        cv2.imwrite(os.path.join(LAB_PATH, os.path.splitext(os.path.basename(path))[0]) + '_B_LAB_' + version + '_' + str(face_index) + '.png', b)
     
     l_hist_LAB = cv2.calcHist([l], [0], None, [26], [0, 256])
     l_hist_LAB = l_hist_LAB.ravel()
@@ -315,13 +329,14 @@ def extract_color_channel(path, face_index, image, version):
     cr *= 255
     cb *= 255
     
-    YCRCB_PATH = os.path.join(FOLDER_PATH, FOLDER_NAME + '_YCRCB_' + version)
-    if not os.path.exists(YCRCB_PATH):
-        os.mkdir(YCRCB_PATH)
-    
-    cv2.imwrite(os.path.join(YCRCB_PATH, os.path.splitext(os.path.basename(path))[0]) + '_Y_YCRCB_' + version + '_' + str(face_index) + '.png', y)
-    cv2.imwrite(os.path.join(YCRCB_PATH, os.path.splitext(os.path.basename(path))[0]) + '_CR_YCRCB_' + version + '_' + str(face_index) + '.png', cr)
-    cv2.imwrite(os.path.join(YCRCB_PATH, os.path.splitext(os.path.basename(path))[0]) + '_CB_YCRCB_' + version + '_' + str(face_index) + '.png', cb)
+    if save_color_images:
+        YCRCB_PATH = os.path.join(FOLDER_PATH, FOLDER_NAME + '_YCRCB_' + version)
+        if not os.path.exists(YCRCB_PATH):
+            os.mkdir(YCRCB_PATH)
+        
+        cv2.imwrite(os.path.join(YCRCB_PATH, os.path.splitext(os.path.basename(path))[0]) + '_Y_YCRCB_' + version + '_' + str(face_index) + '.png', y)
+        cv2.imwrite(os.path.join(YCRCB_PATH, os.path.splitext(os.path.basename(path))[0]) + '_CR_YCRCB_' + version + '_' + str(face_index) + '.png', cr)
+        cv2.imwrite(os.path.join(YCRCB_PATH, os.path.splitext(os.path.basename(path))[0]) + '_CB_YCRCB_' + version + '_' + str(face_index) + '.png', cb)
     
     
     y_hist = cv2.calcHist([y], [0], None, [26], [0, 256])
@@ -358,12 +373,13 @@ def extract_lbp(path, face_index, image, version):
 
     desc = LocalBinaryPatterns(24, 8)
     lbp_hist, lbp_img = desc.describe(gray)
-    
-    LBP_PATH = os.path.join(FOLDER_PATH, FOLDER_NAME + '_LBP_' + version)
-    if not os.path.exists(LBP_PATH):
-        os.mkdir(LBP_PATH)
-    
-    cv2.imwrite(os.path.join(LBP_PATH, os.path.splitext(os.path.basename(path))[0]) + '_LBP_' + version + '_' + str(face_index) + '.png', lbp_img)
+
+    if save_lbp_images:
+        LBP_PATH = os.path.join(FOLDER_PATH, FOLDER_NAME + '_LBP_' + version)
+        if not os.path.exists(LBP_PATH):
+            os.mkdir(LBP_PATH)
+        
+        cv2.imwrite(os.path.join(LBP_PATH, os.path.splitext(os.path.basename(path))[0]) + '_LBP_' + version + '_' + str(face_index) + '.png', lbp_img)
     
     # plt.imshow(lbp_img, cmap = plt.get_cmap('gray'))
     # plt.show()
@@ -394,13 +410,14 @@ def extract_gradients(path, face_index, image, version):
     # combine sobelx and sobely to form sobel
     sobel = sobelx + sobely
     
-    SOBEL_PATH = os.path.join(FOLDER_PATH, FOLDER_NAME + '_SOBEL_' + version)
-    if not os.path.exists(SOBEL_PATH):
-        os.mkdir(SOBEL_PATH)
-    
-    cv2.imwrite(os.path.join(SOBEL_PATH, os.path.splitext(os.path.basename(path))[0]) + '_SOBELX_' + version + '_' + str(face_index) + '.png', sobelx)
-    cv2.imwrite(os.path.join(SOBEL_PATH, os.path.splitext(os.path.basename(path))[0]) + '_SOBELY_' + version + '_' + str(face_index) + '.png', sobely)
-    cv2.imwrite(os.path.join(SOBEL_PATH, os.path.splitext(os.path.basename(path))[0]) + '_SOBEL_' + version + '_' + str(face_index) + '.png', sobel)
+    if save_gradient_images:
+        SOBEL_PATH = os.path.join(FOLDER_PATH, FOLDER_NAME + '_SOBEL_' + version)
+        if not os.path.exists(SOBEL_PATH):
+            os.mkdir(SOBEL_PATH)
+        
+        cv2.imwrite(os.path.join(SOBEL_PATH, os.path.splitext(os.path.basename(path))[0]) + '_SOBELX_' + version + '_' + str(face_index) + '.png', sobelx)
+        cv2.imwrite(os.path.join(SOBEL_PATH, os.path.splitext(os.path.basename(path))[0]) + '_SOBELY_' + version + '_' + str(face_index) + '.png', sobely)
+        cv2.imwrite(os.path.join(SOBEL_PATH, os.path.splitext(os.path.basename(path))[0]) + '_SOBEL_' + version + '_' + str(face_index) + '.png', sobel)
 
     # # display sobelx, sobely, and sobel
     # plt.imshow(sobelx, cmap = "gray")

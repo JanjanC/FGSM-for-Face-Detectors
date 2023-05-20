@@ -1,3 +1,4 @@
+import cv2
 import numpy as np
 import gdown
 import os
@@ -15,7 +16,7 @@ def tensor_to_np(image):
 
 def save_tensor_img(tensor, filename):
     save_img = cv2.cvtColor(tensor_to_np(tensor), cv2.COLOR_RGB2BGR)
-    cv2.imwrite(filename, tensor)
+    cv2.imwrite(filename, save_img)
 
 def download_weight(filename, link):
     if not os.path.exists(os.path.dirname(filename)):
@@ -24,3 +25,9 @@ def download_weight(filename, link):
     if not os.path.isfile(filename):
         print("Downloading:", filename)
         gdown.download(link, filename, quiet=False)
+
+def detach_cpu(image):
+    return image.detach().cpu()
+    
+def clone_detach(image):
+    return image.clone().detach()

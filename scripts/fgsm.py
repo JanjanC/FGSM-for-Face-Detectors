@@ -58,7 +58,7 @@ def fgsm_attack(image, e, data_grad, mask):
     # Return the perturbed image
     return perturbed_image
     
-def min_model_eps(image, data_grad, model, mask, bbox, start = 0., end = 3, background=False):
+def find_min_e(image, data_grad, model, mask, bbox, start = 0, end = 3, iou_thresh = 0.4, background=False):
     # Set epsilon to the start value
     eps = start
     
@@ -67,7 +67,7 @@ def min_model_eps(image, data_grad, model, mask, bbox, start = 0., end = 3, back
     # If the current face cannot be detected
     _, iou = closest_bbox(model.detect(image), bbox)
     #print("IOU:", iou)
-    if iou <= 0.40:
+    if iou <= iou_thresh:
         return 0
     
     perturbed_img = image.clone().detach()
@@ -83,8 +83,8 @@ def min_model_eps(image, data_grad, model, mask, bbox, start = 0., end = 3, back
         eps += step
         perturbed_img = fgsm_attack(image, eps, data_grad, mask)
     
-    if save_image:
-        utils.save_tensor_img(perturbed_img, '_1unperturbed.png')y
+    #if save_image:
+    #    utils.save_tensor_img(perturbed_img, '_1unperturbed.png')
     
     #utils.save_tensor_img(perturbed_img, '_2cantdetect.png')
     #print("\te undetectable | closest bbox:", closest_bbox(model.detect(perturbed_img), bbox), "eps:", eps)
@@ -106,7 +106,7 @@ def min_model_eps(image, data_grad, model, mask, bbox, start = 0., end = 3, back
     # Add an additional 0.01 so that the returned value is the last epsilon value that the model was unable to detect
     return eps + step
 
-def binary_search(low, high, image, data_grad, model.detect, mask, bbox, background=False):
+def binary_search(low, high, image, data_grad, model, mask, bbox, background=False):
     _, iou = closest_bbox(model.detect(image), bbox)
     if iou <= 0.4:
         return 0

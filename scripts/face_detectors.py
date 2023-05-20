@@ -82,7 +82,7 @@ class YoloFace():
         self.conf = conf
         utils.download_weight(weight_loc, weight_url)
         utils.download_weight(cfg_loc, cfg_url)
-        _, self.yf_face_detector = models.load_model(cfg_loc, weight_loc)
+        self.device, self.yf_face_detector = models.load_model(cfg_loc, weight_loc)
 
     def detect(self, image, return_boxes = True):
         image = utils.tensor_to_np(image)
