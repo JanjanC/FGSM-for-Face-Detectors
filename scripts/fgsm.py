@@ -58,7 +58,7 @@ def fgsm_attack(image, e, data_grad, mask):
     # Return the perturbed image
     return perturbed_image
     
-def find_min_e(image, data_grad, model, mask, bbox, start = 0, end = 3, iou_thresh = 0.4, background=False):
+def find_min_e(image, data_grad, model, mask, bbox, start=0, end=3, iou_thresh=0.4, background=False):
     # Set epsilon to the start value
     eps = start
     
@@ -75,7 +75,7 @@ def find_min_e(image, data_grad, model, mask, bbox, start = 0, end = 3, iou_thre
     #utils.save_tensor_img(perturbed_img, '_1unperturbed.png')
     
     # Increase the epsilon value by 0.05 until it cannot be detected by the detection function or until the end
-    while closest_bbox(model.detect(perturbed_img), bbox)[1] > 0.3 and eps < end:
+    while closest_bbox(model.detect(perturbed_img), bbox)[1] > iou_thresh and eps < end:
         if background:
             step = 0.5
         else:
@@ -91,7 +91,7 @@ def find_min_e(image, data_grad, model, mask, bbox, start = 0, end = 3, iou_thre
     #print("IOU2:", closest_bbox(model.detect(perturbed_img), bbox)[1])
     
     # Decrease the epsilon value by 0.01 until it can be detected by the detection function or until the start
-    while not closest_bbox(model.detect(perturbed_img), bbox)[1] > 0.3 and eps > start:
+    while not closest_bbox(model.detect(perturbed_img), bbox)[1] > iou_thresh and eps > start:
         step = 0.005 if eps < 1 else 0.01
         eps -= step
         perturbed_img = fgsm_attack(image, eps, data_grad, mask)
@@ -106,9 +106,9 @@ def find_min_e(image, data_grad, model, mask, bbox, start = 0, end = 3, iou_thre
     # Add an additional 0.01 so that the returned value is the last epsilon value that the model was unable to detect
     return eps + step
 
-def binary_search(low, high, image, data_grad, model, mask, bbox, background=False):
+def binary_search(image, data_grad, model, mask, bbox, low=0, high=3, iou_thresh = 0.4, background=False):
     _, iou = closest_bbox(model.detect(image), bbox)
-    if iou <= 0.4:
+    if iou <= iou_thresh:
         return 0
     
     perturbed_img = image.clone().detach()
@@ -118,7 +118,7 @@ def binary_search(low, high, image, data_grad, model, mask, bbox, background=Fal
         mid = (high + low) / 2
         perturbed_img = fgsm_attack(image, mid, data_grad, mask)
         iou_score = closest_bbox(model.detect(perturbed_img), bbox)[1]
-        if iou_score > 0.3:
+        if iou_score > iou_thresh:
             low = mid + 0.005
             mid += 0.005
         else:
