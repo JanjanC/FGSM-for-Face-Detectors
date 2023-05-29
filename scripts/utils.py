@@ -11,7 +11,7 @@ def open_img_as_tensor(filename):
     data = transforms.Compose([DEFAULT_TRANSFORMS,Resize(416)])((data, np.zeros((1, 5))))[0].unsqueeze(0)
     return data
 
-def tensor_to_np(image):
+def tensor_to_np_img(image):
     return np.moveaxis((image.detach().numpy() * 255).squeeze(), 0, -1).astype('uint8')
 
 def save_tensor_img(tensor, filename):

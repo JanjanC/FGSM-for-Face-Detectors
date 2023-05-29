@@ -21,7 +21,7 @@ class MediaPipe():
         self.conf = conf
     
     def detect(self, image, return_boxes = True):
-        image = utils.tensor_to_np(image)
+        image = utils.tensor_to_np_img(image)
         
         with self.mp_face_detection.FaceDetection(min_detection_confidence=self.conf, model_selection=0) as face_detection:
             results = face_detection.process(image)
@@ -51,7 +51,7 @@ class YuNet():
         self.yn_face_detector = cv2.FaceDetectorYN_create(weight_loc, "", (0, 0))
 
     def detect(self, image, return_boxes = True):
-        image = utils.tensor_to_np(image)
+        image = utils.tensor_to_np_img(image)
         height, width, _ = image.shape
         self.yn_face_detector.setInputSize((width, height))
         if self.nms is not None:
@@ -85,7 +85,7 @@ class YoloFace():
         self.device, self.yf_face_detector = models.load_model(cfg_loc, weight_loc)
 
     def detect(self, image, return_boxes = True):
-        image = utils.tensor_to_np(image)
+        image = utils.tensor_to_np_img(image)
         bboxes = detect.detect_image(self.yf_face_detector, image, conf_thres=0.5, nms_thres=0.5)
         if not return_boxes:
             return bboxes is not None
