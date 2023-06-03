@@ -60,7 +60,7 @@ def fgsm_attack(image, e, data_grad, mask):
     
 def find_min_e(image, data_grad, model, mask, bbox, start=0, end=3, iou_thresh=0.4, background=False):
     # Set epsilon to the start value
-    eps = start
+    eps = 1
     
     #print("\tbefore perturbation | closest bbox:", closest_bbox(det_fn(image), bbox), "eps:", eps)
     
