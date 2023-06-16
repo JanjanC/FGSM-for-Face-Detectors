@@ -2,8 +2,10 @@ import cv2
 import numpy as np
 import gdown
 import os
+from torch import Tensor
 import torchvision.transforms as transforms
 from pytorchyolo.utils.transforms import Resize, DEFAULT_TRANSFORMS
+import matplotlib.pyplot as plt
 
 def open_img_as_tensor(filename):
     data = cv2.imread(filename)
@@ -66,3 +68,10 @@ def remap( x, oMin, oMax, nMin, nMax ):
         result = newMax - portion
 
     return result
+    
+def display_img(*imgs, cmap=None):
+    for img in imgs:
+        if isinstance(img, Tensor):
+            img = tensor_to_np_img(img)
+        plt.imshow(img, cmap=cmap)
+        plt.show()
