@@ -8,10 +8,14 @@ from pytorchyolo.utils.transforms import Resize, DEFAULT_TRANSFORMS
 import matplotlib.pyplot as plt
 
 def open_img_as_tensor(filename):
-    data = cv2.imread(filename)
-    data = cv2.cvtColor(data, cv2.COLOR_BGR2RGB)
-    data = transforms.Compose([DEFAULT_TRANSFORMS,Resize(416)])((data, np.zeros((1, 5))))[0].unsqueeze(0)
-    return data
+    image = cv2.imread(filename)
+    return np_to_tesor_img(image)
+    
+def np_to_tesor_img(image):
+    if image.dtype is not np.uint8:
+        image = image.astype(np.uint8)
+    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    return transforms.Compose([DEFAULT_TRANSFORMS,Resize(416)])((image, np.zeros((1, 5))))[0].unsqueeze(0)
 
 def tensor_to_np_img(image):
     return np.moveaxis((image.detach().numpy() * 255).squeeze(), 0, -1).astype('uint8')
