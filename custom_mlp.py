@@ -3,6 +3,16 @@ from sklearn.utils.extmath import safe_sparse_dot
 from sklearn.neural_network import MLPRegressor
 import numpy as np
 
+def custom_scorer(y_true, y_pred, penalty=1):
+    pmae = positive_error(y_true, y_pred)
+    concealment = concealment_ratio(y_true, y_pred)
+    
+    pmae_target = np.mean(y_train)
+    
+    pmae_norm = pmae / pmae_target
+    
+    return concealment - (pmae_norm * penalty)
+
 def custom_loss(y_true, y_pred, alpha=2):
     squared_error_sum = 0
     for a, b in zip(y_true, y_pred):
