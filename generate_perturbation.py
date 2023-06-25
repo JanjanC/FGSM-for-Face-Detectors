@@ -436,21 +436,16 @@ def pipeline(path, eps_model, color_space, extract_region, perturb_region, given
         if given_index == None or given_index == face_index:
             row['face_index'] = face_index
             print("Face", face_index)
-
+            
+            row['obj_score'] = face_row[4].item()
+            row['class_score'] = face_row[5].item()
             x, y, w, h = face_row[0], face_row[1], face_row[2], face_row[3]
             row['x'], row['y'], row['w'], row['h'] = x, y, w, h
 
             factor_x, factor_y, factor_w, factor_h = random.uniform(1, 2), random.uniform(1, 2), random.uniform(1, 2), random.uniform(1, 2)
-            normal_x, normal_y, normal_w, normal_h = x / 416, y / 416, w / 416, h / 416
+            normal_x, normal_y, normal_w, normal_h = x / 415, y / 415, w / 415, h / 415
 
-            new_x = normal_x * factor_x if random.choice([True, False]) else normal_x / factor_x
-            new_y = normal_y * factor_y if random.choice([True, False]) else normal_y / factor_y
-            new_w = normal_w * factor_w if random.choice([True, False]) else normal_w / factor_w
-            new_h = normal_h * factor_h if random.choice([True, False]) else normal_h / factor_h
-
-            new_x, new_y, new_w, new_h = max(min(1, new_x), 0), max(min(1, new_y), 0), max(min(1, new_w), 0), max(min(1, new_h), 0)
-
-            target = torch.tensor([[0.0, 0, new_x, new_y, new_w, new_h]])
+            target = torch.tensor([[0.0, 0, normal_x, normal_y, normal_w, normal_h]])
             target = target.to(device)
 
             loss, loss_components = compute_loss(output, target, model)
@@ -504,6 +499,7 @@ def pipeline(path, eps_model, color_space, extract_region, perturb_region, given
             X_features = df.loc[:,  predict_features]
 
             min_eps = eps_model.predict(X_features)
+            print("Predicted Epsilon", min_eps)
 
             if perturb_region == 0:
                 whole_mask = np.zeros(data.shape)
@@ -541,7 +537,7 @@ color_channels = {
 }
 
 def get_features(color_space, region):
-    features = ["w", "h", "x", "y"]
+    features = ["w", "h", "x", "y", "obj_score", "class_score"]
     for color_channel in color_channels[color_space]: 
         features += [color_channel + region + "_" + str(i) for i in range(26)]
     features += ["LBP_BIN_" + region + "_" + str(i) for i in range(26)]
