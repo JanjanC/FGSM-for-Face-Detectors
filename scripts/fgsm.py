@@ -1,7 +1,6 @@
 import cv2
 import math
 import numpy as np
-import matplotlib.pyplot as plt
 import torch
 
 def get_iou(ground_truth, pred):
