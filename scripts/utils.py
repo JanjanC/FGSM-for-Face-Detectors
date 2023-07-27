@@ -9,6 +9,8 @@ import matplotlib.pyplot as plt
 
 def open_img_as_tensor(filename):
     image = cv2.imread(filename)
+    if image is None:
+        raise Exception("File could not be opened")
     return np_to_tesor_img(image)
     
 def np_to_tesor_img(image):

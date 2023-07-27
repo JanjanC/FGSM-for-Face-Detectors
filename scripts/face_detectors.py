@@ -88,6 +88,6 @@ class YoloFace():
         image = utils.tensor_to_np_img(image)
         bboxes = detect.detect_image(self.yf_face_detector, image, conf_thres=0.5, nms_thres=0.5)
         if not return_boxes:
-            return bboxes is not None
+            return bboxes is not []
         else:
             return [BoxCoords(*map(int, bbox[:4])) for bbox in bboxes]
