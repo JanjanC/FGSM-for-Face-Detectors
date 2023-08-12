@@ -1,11 +1,22 @@
+import pandas as pd
+import torch
+from scripts.utils import *
+from scripts.face_detectors import YoloFace
+from pytorchyolo.models import load_model
+from pytorchyolo.utils.transforms import Resize, DEFAULT_TRANSFORMS
+from pytorchyolo.utils.utils import non_max_suppression
+from pytorchyolo.utils.loss import compute_loss
 import cv2
 import os
 import numpy as np
 import skimage.feature as feature
+from scripts.facesegmentor import FaceSegementor
 
 save_color_images = True
 save_lbp_images = True
 save_gradient_images = True 
+FOLDER_PATH = os.path.join(os.getcwd(), "image_attribute_dumps")
+FOLDER_NAME = ""
 
 class LocalBinaryPatterns:
     def __init__(self, numPoints, radius):
@@ -36,7 +47,7 @@ def extract_color_channel(path, face_index, image, version):
     if save_color_images:
         COLOR_PATH = os.path.join(FOLDER_PATH, FOLDER_NAME + '_Colors_' + version)
         if not os.path.exists(COLOR_PATH):
-            os.mkdir(COLOR_PATH)
+            os.makedirs(COLOR_PATH)
             
         cv2.imwrite(os.path.join(COLOR_PATH, os.path.splitext(os.path.basename(path))[0]) + '_RGB_' + version + '_' + str(face_index) + '.png', rgb)
         cv2.imwrite(os.path.join(COLOR_PATH, os.path.splitext(os.path.basename(path))[0]) + '_HSV_' + version + '_' + str(face_index) + '.png', hsv)
@@ -106,7 +117,7 @@ def extract_color_channel(path, face_index, image, version):
     if save_color_images:
         RGB_PATH = os.path.join(FOLDER_PATH, FOLDER_NAME + '_RGB_' + version)
         if not os.path.exists(RGB_PATH):
-            os.mkdir(RGB_PATH)
+            os.makedirs(RGB_PATH)
         
         cv2.imwrite(os.path.join(RGB_PATH, os.path.splitext(os.path.basename(path))[0]) + '_R_RGB_' + version + '_' + str(face_index) + '.png', r)
         cv2.imwrite(os.path.join(RGB_PATH, os.path.splitext(os.path.basename(path))[0]) + '_G_RGB_' + version + '_' + str(face_index) + '.png', g)
@@ -163,7 +174,7 @@ def extract_color_channel(path, face_index, image, version):
     if save_color_images:
         HSV_PATH = os.path.join(FOLDER_PATH, FOLDER_NAME + '_HSV_' + version)
         if not os.path.exists(HSV_PATH):
-            os.mkdir(HSV_PATH)
+            os.makedirs(HSV_PATH)
         
         cv2.imwrite(os.path.join(HSV_PATH, os.path.splitext(os.path.basename(path))[0]) + '_H_HSV_' + version + '_' + str(face_index) + '.png', h)
         cv2.imwrite(os.path.join(HSV_PATH, os.path.splitext(os.path.basename(path))[0]) + '_S_HSV_' + version + '_' + str(face_index) + '.png', s)
@@ -220,7 +231,7 @@ def extract_color_channel(path, face_index, image, version):
     if save_color_images:
         HSL_PATH = os.path.join(FOLDER_PATH, FOLDER_NAME + '_HSL_' + version)
         if not os.path.exists(HSL_PATH):
-            os.mkdir(HSL_PATH)
+            os.makedirs(HSL_PATH)
         
         cv2.imwrite(os.path.join(HSL_PATH, os.path.splitext(os.path.basename(path))[0]) + '_H_HSL_' + version + '_' + str(face_index) + '.png', h)
         cv2.imwrite(os.path.join(HSL_PATH, os.path.splitext(os.path.basename(path))[0]) + '_S_HSL_' + version + '_' + str(face_index) + '.png', s)
@@ -274,7 +285,7 @@ def extract_color_channel(path, face_index, image, version):
     if save_color_images:
         LAB_PATH = os.path.join(FOLDER_PATH, FOLDER_NAME + '_LAB_' + version)
         if not os.path.exists(LAB_PATH):
-            os.mkdir(LAB_PATH)
+            os.makedirs(LAB_PATH)
         
         cv2.imwrite(os.path.join(LAB_PATH, os.path.splitext(os.path.basename(path))[0]) + '_L_LAB_' + version + '_' + str(face_index) + '.png', l)
         cv2.imwrite(os.path.join(LAB_PATH, os.path.splitext(os.path.basename(path))[0]) + '_A_LAB_' + version + '_' + str(face_index) + '.png', a)
@@ -332,7 +343,7 @@ def extract_color_channel(path, face_index, image, version):
     if save_color_images:
         YCRCB_PATH = os.path.join(FOLDER_PATH, FOLDER_NAME + '_YCRCB_' + version)
         if not os.path.exists(YCRCB_PATH):
-            os.mkdir(YCRCB_PATH)
+            os.makedirs(YCRCB_PATH)
         
         cv2.imwrite(os.path.join(YCRCB_PATH, os.path.splitext(os.path.basename(path))[0]) + '_Y_YCRCB_' + version + '_' + str(face_index) + '.png', y)
         cv2.imwrite(os.path.join(YCRCB_PATH, os.path.splitext(os.path.basename(path))[0]) + '_CR_YCRCB_' + version + '_' + str(face_index) + '.png', cr)
@@ -377,7 +388,7 @@ def extract_lbp(path, face_index, image, version):
     if save_lbp_images:
         LBP_PATH = os.path.join(FOLDER_PATH, FOLDER_NAME + '_LBP_' + version)
         if not os.path.exists(LBP_PATH):
-            os.mkdir(LBP_PATH)
+            os.makedirs(LBP_PATH)
         
         cv2.imwrite(os.path.join(LBP_PATH, os.path.splitext(os.path.basename(path))[0]) + '_LBP_' + version + '_' + str(face_index) + '.png', lbp_img)
     
@@ -413,7 +424,7 @@ def extract_gradients(path, face_index, image, version):
     if save_gradient_images:
         SOBEL_PATH = os.path.join(FOLDER_PATH, FOLDER_NAME + '_SOBEL_' + version)
         if not os.path.exists(SOBEL_PATH):
-            os.mkdir(SOBEL_PATH)
+            os.makedirs(SOBEL_PATH)
         
         cv2.imwrite(os.path.join(SOBEL_PATH, os.path.splitext(os.path.basename(path))[0]) + '_SOBELX_' + version + '_' + str(face_index) + '.png', sobelx)
         cv2.imwrite(os.path.join(SOBEL_PATH, os.path.splitext(os.path.basename(path))[0]) + '_SOBELY_' + version + '_' + str(face_index) + '.png', sobely)
@@ -452,7 +463,8 @@ def extract_gradients(path, face_index, image, version):
     
     return sobelx_hist, sobely_hist, sobel_hist
 
-def extract_image_attributes(row, path, face_index, image, version):
+def extract_image_attributes(path, face_index, image, version):
+    row = {}
     r_hist, g_hist, b_hist, h_hist_HSV, s_hist_HSV, v_hist_HSV, h_hist_HSL, s_hist_HSL, l_hist_HSL, l_hist_LAB, a_hist_LAB, b_hist_LAB, y_hist, cr_hist, cb_hist = extract_color_channel(path, face_index, image, version)
     lbp_hist = extract_lbp(path, face_index, image, version)
     sobelx_hist, sobely_hist, sobel_hist = extract_gradients(path, face_index, image, version)
@@ -517,3 +529,123 @@ def extract_image_attributes(row, path, face_index, image, version):
         row["SOBEL_BIN_" + version + '_' + str(i)] = sobel_hist[i]
     
     return row
+    
+def get_features(path, face_segmentor=None, extract_from_mask=False, fgsm_loss_target="conf", model=None, verbose=False):
+    if model is None:
+        main_yf = YoloFace()
+        device, model = main_yf.device, main_yf.yf_face_detector
+
+    torch.autograd.set_detect_anomaly(True)
+    
+    df = pd.DataFrame() # dataframe storing the dataset
+    row = {} #the information/columns for a single row in the dataset is stored here
+    grads = []
+    bboxes = []
+    masks = []
+    
+    file_basename = os.path.basename(path)
+    if verbose:
+        print(file_basename, end=" ")
+        print("<- working on")
+
+    row['path'] = path
+
+    model.eval()
+    model.gradient_mode = False
+
+    for yolo_layer in model.yolo_layers:
+        yolo_layer.gradient_mode = False
+
+    # Read and transform the image from the path
+    data = cv2.imread(path)
+    row['source_w'], row['source_h'], _ = data.shape
+    data = cv2.cvtColor(data, cv2.COLOR_BGR2RGB)
+    data = transforms.Compose([DEFAULT_TRANSFORMS,Resize(416)])((data, np.zeros((1, 5))))[0].unsqueeze(0)
+
+    with torch.no_grad():
+        # Forward pass the data through the model and call non max suppression
+        nms, nms_output = non_max_suppression(model(data), 0.5, 0.5) #conf_thres and iou_thres = 0.5
+
+    face_list = []
+    if type(nms_output[0]) is not int:
+        face_list = nms_output[0]
+
+    data = data.to(device)
+
+    # Set requires_grad attribute of tensor. Important for attack
+    data.requires_grad = True
+
+    model.gradient_mode = True
+    for yolo_layer in model.yolo_layers:
+        yolo_layer.gradient_mode = True
+
+    output = model(data)
+
+    # loop through each of the faces in the image
+    for face_index, face_row in enumerate(face_list): #nms_output[0] because the model is designed to take in several images at a time from the dataloader but we are only loading the image one at a time
+
+        row['face_index'] = face_index
+        if verbose:
+            print("Face", face_index)
+
+        row['obj_score'] = face_row[4].item()
+        row['class_score'] = face_row[5].item()
+        x, y, w, h = face_row[0], face_row[1], face_row[2], face_row[3]
+
+        normal_x, normal_y, normal_w, normal_h = x / 415, y / 415, w / 415, h / 415
+
+        if fgsm_loss_target == "bbox":
+            target = torch.tensor([[face_row[4].item(), face_row[5].item(), 0, 0, 0, 0]])
+        elif fgsm_loss_target == "conf":
+            target = torch.tensor([[0.0, 0, normal_x, normal_y, normal_w, normal_h]])
+
+        target = target.to(device)
+        loss, loss_components = compute_loss(output, target, model)
+
+        # cropped image with bounding box
+        # getting (x1, y1) upper left, (x2, y2) lower right
+        x1 = max(int(np.floor((x - w / 2).detach().cpu().numpy())), 0)
+        y1 = max(int(np.floor((y - h / 2).detach().cpu().numpy())), 0)
+        x2 = min(int(np.ceil((x + w / 2).detach().cpu().numpy())), 415)
+        y2 = min(int(np.ceil((y + h / 2).detach().cpu().numpy())), 415)
+
+        row['x1'], row['y1'], row['x2'], row['y2'] = x1, y1, x2, y2
+        row['x'], row['y'], row['w'], row['h'] = x, y, w, h
+        
+        cropped_image = detach_cpu(data)[:, :, y1:y2, x1:x2] #get the first dimension, the channels, and crop it
+        cropped_image = tensor_to_np_img(cropped_image) #reshape the image to (w/h, h/w, channel)
+
+        # Zero all existing gradients
+        model.zero_grad()
+        data.grad = None
+
+        # Calculate gradients of model in backward pass
+        loss.backward(retain_graph=True) #TODO: Amos - check if this is correct
+        
+        # Collect datagrad
+        data_grad = data.grad.data
+        grads.append(clone_detach(data_grad))
+        
+        bbox = (x1, y1, x2, y2)
+        bboxes.append(bbox)
+        
+        if face_segmentor is None:
+            mask = np.ones((cropped_image.shape[0], cropped_image.shape[1]))
+        else:
+            mask, used_mask = face_segmentor.segment_transform(cropped_image)
+        
+        if not extract_from_mask:
+            row = {**row, **extract_image_attributes(path, face_index, cropped_image, "bbox")}
+        else:
+            masked_image = cropped_image
+            masked_image[mask == 0] = 0
+            row = {**row, **extract_image_attributes(path, face_index, masked_image, "mask")}
+        
+        whole_mask = np.zeros(data.shape)
+        whole_mask[..., bbox[1]:bbox[3], bbox[0]:bbox[2]] = mask
+        
+        masks.append(torch.Tensor(whole_mask))
+        
+        df = pd.concat([df, pd.DataFrame([row])], axis=0, ignore_index=True)
+    
+    return df, grads, bboxes, masks
