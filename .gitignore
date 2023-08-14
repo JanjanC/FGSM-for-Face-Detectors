@@ -4,3 +4,7 @@ model_dumps/
 min_epsilon_dataset.csv
 scripts/__pycache__/
 *.pyc
+facesegmentor/.ipynb_checkpoints/
+facesegmentor/__pycache__/
+pytorchyolo/__pycache__/
+pytorchyolo/utils/__pycache__/
