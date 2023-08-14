@@ -1,8 +1,13 @@
+import os
+import joblib
+from scripts import utils
 from sklearn.neural_network import MLPRegressor
 from sklearn.neural_network._base import DERIVATIVES
 from sklearn.utils.extmath import safe_sparse_dot
 from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import train_test_split
+
+WEIGHTS_DIR = os.path.join(os.getcwd(), 'weights')
 
 def custom_scorer(y_true, y_pred, penalty=1):
     pmae = positive_error(y_true, y_pred)
@@ -104,11 +109,25 @@ class CustomMLP(MLPRegressor):
             )
 
         return loss, coef_grads, intercept_grads
-        
-def preprocess(df):
-    encoder = LabelEncoder()
-    categorical_columns = df.select_dtypes(include=[bool, object]).columns
-    encoded_columns = df[categorical_columns].apply(encoder.fit_transform)
-    df_encoded_features = df.copy()
-    df_encoded_features[categorical_columns] = encoded_columns
-    return df_encoded_features
+    
+class IARM():
+    def __init__(self, weight_loc=os.path.join(WEIGHTS_DIR, "IARM", "iarm.pkl"), weight_url="https://drive.google.com/uc?id=1ERDKeaxQYUxUsQW0NLMzXRPnOJoi6QrF"):
+        utils.download_weight(weight_loc, weight_url)
+        self.searchCV = joblib.load(weight_loc)
+        self.model = joblib.load(weight_loc).best_estimator_
+    
+    def preprocess(self, X):
+        X = X.loc[:, self.model.feature_names_in_]
+        encoder = LabelEncoder()
+        categorical_columns = X.select_dtypes(include=[bool, object]).columns
+        encoded_columns = X[categorical_columns].apply(encoder.fit_transform)
+        df_encoded_features = X.copy()
+        df_encoded_features[categorical_columns] = encoded_columns
+        return df_encoded_features
+    
+    def predict(self, X, preprocess=True, multiplier=1):
+        if preprocess:
+            X = self.preprocess(X)
+        preds = self.model.predict(X)
+        preds = list(map(lambda x: x * multiplier, preds))
+        return preds

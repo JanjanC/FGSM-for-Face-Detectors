@@ -81,3 +81,18 @@ def display_img(*imgs, cmap=None):
             img = tensor_to_np_img(img)
         plt.imshow(img, cmap=cmap)
         plt.show()
+        
+def isstr(o):
+  try:
+    basestring
+  except NameError:
+    basestring = (str, bytes)
+  return isinstance(o, basestring)
+
+def toiter(o):
+  if not isstr(o):
+    try:
+      return iter(o)
+    except TypeError:
+      pass
+  return iter([o])

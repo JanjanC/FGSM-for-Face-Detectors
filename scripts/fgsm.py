@@ -2,6 +2,7 @@ import cv2
 import math
 import numpy as np
 import torch
+from scripts import utils
 
 def get_iou(ground_truth, pred):
     # coordinates of the area of intersection.
@@ -44,17 +45,19 @@ def closest_bbox(bboxes, target_bbox):
         return [], 0
 
 # FGSM attack code
-def fgsm_attack(image, e, data_grad, mask):
+def fgsm_attack(image, eps, grads, masks):
+    eps = utils.toiter(eps)
+    grads = utils.toiter(grads)
+    masks = utils.toiter(masks)
+    
     # Collect the element-wise sign of the data gradient
-    image = image.clone().detach()
-    sign_data_grad = data_grad.sign()
-    # Create the perturbed image by adjusting each pixel of the input image
-    perturbed_image = image
-    perturbed_image = perturbed_image + e * sign_data_grad * mask
-    # apply it only to the face region
-    # Adding clipping to maintain [0,1] range
-    perturbed_image = torch.clamp(perturbed_image, 0, 1)
-    # Return the perturbed image
+    perturbed_image = image.clone().detach()
+    
+    for e, data_grad, mask in zip(eps, grads, masks):    
+        sign_data_grad = data_grad.sign()
+        perturbed_image = perturbed_image + e * sign_data_grad * mask
+        perturbed_image = torch.clamp(perturbed_image, 0, 1)
+        
     return perturbed_image
     
 def find_min_e(image, data_grad, model, mask, bbox, start=0, end=3, iou_thresh=0.4, background=False):

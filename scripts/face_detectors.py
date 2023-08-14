@@ -1,4 +1,4 @@
-import scripts.utils as utils
+from scripts import utils
 import typing
 import os
 import cv2
@@ -6,7 +6,7 @@ from pytorchyolo import detect, models
 import mediapipe as mp
 import numpy as np
 
-WEIGHTS_DIR = os.path.join(os.getcwd(), 'face_detector_weights')
+WEIGHTS_DIR = os.path.join(os.getcwd(), 'weights')
 
 class BoxCoords(typing.NamedTuple):
     x1: int
