@@ -1,0 +1,3 @@
+weights/
+.ipynb_checkpoints/
+min_epsilon_dataset.csv
