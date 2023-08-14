@@ -1,0 +1,10 @@
+absl-py==1.4.0
+filelock==3.12.0
+flatbuffers==23.5.26
+gdown==4.7.1
+mediapipe==0.10.1
+opencv-contrib-python==4.7.0.72
+opencv-python==4.7.0.72
+protobuf==3.20.3
+sounddevice==0.4.6
+tqdm==4.65.0

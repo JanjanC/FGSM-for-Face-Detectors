@@ -1,3 +1,6 @@
 weights/
 .ipynb_checkpoints/
+model_dumps/
 min_epsilon_dataset.csv
+scripts/__pycache__/
+*.pyc
