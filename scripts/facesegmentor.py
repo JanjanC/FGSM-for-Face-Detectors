@@ -7,7 +7,7 @@ import torch.nn.functional as F
 import cv2
 from scripts.utils import np_to_tesor_img
 
-sys.path.append('src_release')
+sys.path.append('facesegmentor')
 from models.encoder_decoder_faceoccnet import FaceOccNet 
 from torch_utils import torch_load_weights,evaluation,viz_notebook,plot_confusion_matrix
 from data_tools import decode_mask2img,encode_img2mask
@@ -15,7 +15,8 @@ from data_tools import decode_mask2img,encode_img2mask
 WEIGHTS_DIR = os.path.join(os.getcwd(), 'face_detector_weights')
 
 class FaceSegementor():
-    def __init__(self, weight_loc=os.path.join(WEIGHTS_DIR, "faceseg", "ptlabel_best_model.pth")):
+    def __init__(self, weight_loc=os.path.join(WEIGHTS_DIR, "faceseg", "ptlabel_best_model.pth"), weight_url="https://drive.google.com/file/d/1cdojb7o0E7VPiK_xFCtCa9ZpFYK_a9lM/view?usp=drive_link"):
+        utils.download_weight(weight_loc, weight_url)
         fs_model = FaceOccNet(input_channels=3, n_classes=3,is_regularized=True)
         fs_device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         fs_model.to(fs_device)
